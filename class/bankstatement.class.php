@@ -129,7 +129,7 @@ class BankStatement extends CommonObject
 		"amount_credit" => array("type" => "double(24,8)", "label" => "Amountcredit", "enabled" => "1", 'position' => 80, 'notnull' => 1, "visible" => "-1",),
 		"deleted_date" => array("type" => "datetime", "label" => "Deleteddate", "enabled" => "1", 'position' => 85, 'notnull' => 0, "visible" => "-1",),
 		"fk_duplicate_of" => array("type" => "integer", "label" => "Fkduplicateof", "enabled" => "1", 'position' => 90, 'notnull' => 0, "visible" => "-1", "css" => "maxwidth500 widthcentpercentminusxx",),
-		"status" => array("type" => "smallint(6)", "label" => "Status", "enabled" => "1", 'position' => 500, 'notnull' => 1, "visible" => "-1",),
+		"status" => array("type" => "smallint(6)", "label" => "Status", "enabled" => "1", 'position' => 500, 'notnull' => 1, "visible" => "-1",'arrayofkeyval' => array(0 => 'BankStatementStatusNotJustified', '1' => 'BankStatementStatusJustified', 9 => 'BankStatementStatusCanceled')),
 		"datec" => array("type" => "datetime", "label" => "DateCreation", "enabled" => "1", 'position' => 100, 'notnull' => 1, "visible" => "-1",),
 		"tms" => array("type" => "timestamp", "label" => "DateModification", "enabled" => "1", 'position' => 105, 'notnull' => 1, "visible" => "-1",),
 		"fk_user_author" => array("type" => "integer:User:user/class/user.class.php", "label" => "Fkuserauthor", "enabled" => "1", 'position' => 110, 'notnull' => 1, "visible" => "-1", "css" => "maxwidth500 widthcentpercentminusxx", "csslist" => "tdoverflowmax150",),
@@ -960,12 +960,12 @@ class BankStatement extends CommonObject
 		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			global $langs;
 			//$langs->load("ezcompta@ezcompta");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
+			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('BankStatementStatusNotJustified');
+			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('BankStatementStatusJustified');
+			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('BankStatementStatusCanceled');
+			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('BankStatementStatusNotJustified');
+			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('BankStatementStatusJustified');
+			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('BankStatementStatusCanceled');
 		}
 
 		$statusType = 'status'.$status;
