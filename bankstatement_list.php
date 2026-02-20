@@ -84,6 +84,8 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 // load module libraries
 require_once __DIR__.'/class/bankstatement.class.php';
 // for other modules
@@ -242,6 +244,52 @@ if (!GETPOST('confirmmassaction', 'alpha') && $massaction != 'presend' && $massa
 	$massaction = '';
 }
 
+
+if (!(isset($error) && $error) && $action == 'uploadFile') {
+	$object->fetch(GETPOSTINT('bkstid'));
+
+	// Define relativepath and upload_dir
+	$uploadDir = $conf->ezcompta->multidir_output[isset($object->entity) ? $object->entity : 1] . '/bankstatement/'.get_exdir(0, 0, 0, 1, $object);
+
+	if (is_array($_FILES['userfile']['tmp_name'])) {
+		$userfiles = $_FILES['userfile']['tmp_name'];
+	}
+
+
+	foreach ($userfiles as $key => $userfile) {
+		$error = 0;
+		if (empty($_FILES['userfile']['tmp_name'][$key])) {
+			$error++;
+			if ($_FILES['userfile']['error'][$key] == 1 || $_FILES['userfile']['error'][$key] == 2) {
+				setEventMessages($langs->transnoentitiesnoconv('ErrorThisFileSizeTooLarge', $_FILES['userfile']['name'][$key]), null, 'errors');
+				$submitFileErrorText = array('message' => $langs->transnoentitiesnoconv('ErrorThisFileSizeTooLarge', $_FILES['userfile']['name'][$key]), 'code' => '1337');
+			} else {
+				setEventMessages($langs->transnoentitiesnoconv("ErrorThisFileSizeTooLarge", $_FILES['userfile']['name'][$key], $langs->transnoentitiesnoconv("File")), null, 'errors');
+				$submitFileErrorText = array('message' => $langs->transnoentitiesnoconv('ErrorThisFileSizeTooLarge', $_FILES['userfile']['name'][$key]), 'code' => '1337');
+			}
+		}
+
+		if (!$error) {
+			$generatethumbs = 1;
+			$res = dol_add_file_process($uploadDir, 0, 1, 'userfile', '', null, '', $generatethumbs);
+			//			if ($res > 0) {
+//				$confWidthMedium = $moduleNameUpperCase . '_MEDIA_MAX_WIDTH_MEDIUM';
+//				$confHeightMedium = $moduleNameUpperCase . '_MEDIA_MAX_HEIGHT_MEDIUM';
+//				$confWidthLarge = $moduleNameUpperCase . '_MEDIA_MAX_WIDTH_LARGE';
+//				$confHeightLarge = $moduleNameUpperCase . '_MEDIA_MAX_HEIGHT_LARGE';
+//
+//				// Create thumbs
+//				$imgThumbLarge = saturne_vignette($uploadDir . '/' . $_FILES['userfile']['name'][$key], $conf->global->$confWidthLarge, $conf->global->$confHeightLarge, '_large');
+//				$imgThumbMedium = saturne_vignette($uploadDir . '/' . $_FILES['userfile']['name'][$key], $conf->global->$confWidthMedium, $conf->global->$confHeightMedium, '_medium');
+//				$result = $ecmdir->changeNbOfFiles('+');
+//			} else {
+//				setEventMessages($langs->transnoentitiesnoconv("ErrorThisFileExists", $_FILES['userfile']['name'][$key], $langs->transnoentitiesnoconv("File")), null, 'errors');
+//				$submitFileErrorText = array('message' => $langs->transnoentities('ErrorThisFileExists', $_FILES['userfile']['name'][$key]), 'code' => '1337');
+//			}
+		}
+	}
+}
+
 $parameters = array('arrayfields' => &$arrayfields);
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 if ($reshook < 0) {
@@ -289,14 +337,15 @@ if (empty($reshook)) {
  */
 
 $form = new Form($db);
+$formfile = new FormFile($db);
 
 $now = dol_now();
 
 $title = $langs->trans("BankStatements");
 //$help_url = "EN:Module_BankStatement|FR:Module_BankStatement_FR|ES:Módulo_BankStatement";
 $help_url = '';
-$morejs = array();
-$morecss = array();
+$morejs = array('/saturne/js/saturne.min.js');
+$morecss = array('/saturne/css/saturne.min.css');
 
 
 // Build and execute select
@@ -472,21 +521,6 @@ if ($num == 1 && getDolGlobalInt('MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE') && $sear
 
 llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'mod-ezcompta page-list bodyforlist');	// Can use also classforhorizontalscrolloftabs instead of bodyforlist for a horizontal scroll in the table instead of page
 
-// Example : Adding jquery code
-// print '<script type="text/javascript">
-// jQuery(document).ready(function() {
-// 	function init_myfunc()
-// 	{
-// 		jQuery("#myid").removeAttr(\'disabled\');
-// 		jQuery("#myid").attr(\'disabled\',\'disabled\');
-// 	}
-// 	init_myfunc();
-// 	jQuery("#mybutton").click(function() {
-// 		init_myfunc();
-// 	});
-// });
-// </script>';
-
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
 $param = '';
@@ -527,6 +561,68 @@ $parameters = array('param' => &$param);
 $reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 $param .= $hookmanager->resPrint;
 
+
+
+
+// Single modal for all projects
+?>
+	<div class="wpeo-modal modal-bankstatement" id="add_file_bank_statement_modal">
+		<div class="modal-container wpeo-modal-event">
+
+			<!-- Modal-Header -->
+			<div class="modal-header">
+				<h2 class="modal-title"><?php echo dol_escape_htmltag($langs->trans('FileUpload')); ?></h2>
+				<div class="modal-close"><i class="fas fa-times"></i></div>
+			</div>
+			<!-- Modal-Content -->
+			<div class="modal-content">
+				<div id="add_file_bank_statementModal-content">
+					<form name="add_file_bank_statement" enctype="multipart/form-data" id="add_file_bank_statement"
+						  action="<?php echo $_SERVER["PHP_SELF"]; ?>" method="POST">
+						<input type="hidden" id="bkstid" name="bkstid">
+						<input type="file" id="bkstatementfile" name="userfile[]">
+						<!--<button id="uploadfile" name="uploadfile" class="button"><?php echo $langs->trans('Upload'); ?></button>-->
+					</form>
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+<?php
+
+
+// Example : Adding jquery code
+print '<script type="text/javascript">
+ $(document).ready(function() {
+ 	$(document).on("change","#bkstatementfile",function(e) {
+		 e.preventDefault();
+		 $("#bkstid").val($("#add_file_bank_statement_modal").attr("data-from-id"));
+		 let token = window.saturne.toolbox.getToken();
+		 let form= $("#add_file_bank_statement");
+		 console.log($("#bkstid").val());
+		 let formdata = new FormData(form[0]);
+		 $.ajax({
+			url: document.URL + "?action=uploadFile&token=" + token,
+			type: "POST",
+			data: formdata,
+			processData: false,
+			contentType: false,
+			success: function (resp) {
+				$("#bkstid").val("");
+				$("#bkstatementfile").val("");
+				$("#add_file_bank_statement_modal").removeClass("modal-active");
+			}
+		});
+	});
+});
+</script>';
+
+
+
+
+
+
 // List of mass actions available
 $arrayofmassactions = array(
 	//'validate'=>img_picto('', 'check', 'class="pictofixedwidth"').$langs->trans("Validate"),
@@ -541,6 +637,8 @@ if (GETPOSTINT('nomassaction') || in_array($massaction, array('presend', 'predel
 	$arrayofmassactions = array();
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
+
+
 
 print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">'."\n";
 if ($optioncss != '') {
@@ -836,6 +934,8 @@ while ($i < $imaxinloop) {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
+					print '<span class="fa fa-plus modal-open " title="'.$langs->trans('LinkFile').'">
+							<input type="hidden" class="modal-options" data-from-id="'.(int)$object->id.'" data-modal-to-open="add_file_bank_statement_modal"></span>';
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}

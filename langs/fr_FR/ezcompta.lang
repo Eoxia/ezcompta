@@ -21,3 +21,7 @@ Module999960Name=EzCompta
 AccountingAccountNotExist=Compte inexistant
 EzComptaTransfertDataToNewBankTable=Transférer les écritures bancaires téléchargées vers les relevés de banques
 EzComptaRecordsInserted=%d écriture(s) bancaire au %s transférée(s)
+
+BankStatementStatusNotJustified=Non justifiée
+BankStatementStatusJustified=Justifiée
+BankStatementStatusCanceled=Ignorée
