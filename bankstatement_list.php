@@ -595,11 +595,12 @@ $param .= $hookmanager->resPrint;
 // Example : Adding jquery code
 print '<script type="text/javascript">
  $(document).ready(function() {
- 	$("#bkstatementfile").on("change",function(e) {
+ 	$(document).on("change","#bkstatementfile",function(e) {
 		 e.preventDefault();
-		 $("#bkstid").val($("#add_file_bank_statement_modal").data("from-id"));
+		 $("#bkstid").val($("#add_file_bank_statement_modal").attr("data-from-id"));
 		 let token = window.saturne.toolbox.getToken();
 		 let form= $("#add_file_bank_statement");
+		 console.log($("#bkstid").val());
 		 let formdata = new FormData(form[0]);
 		 $.ajax({
 			url: document.URL + "?action=uploadFile&token=" + token,
@@ -608,7 +609,9 @@ print '<script type="text/javascript">
 			processData: false,
 			contentType: false,
 			success: function (resp) {
-			 	$("#add_file_bank_statement_modal").removeClass("modal-active");
+				$("#bkstid").val("");
+				$("#bkstatementfile").val("");
+				$("#add_file_bank_statement_modal").removeClass("modal-active");
 			}
 		});
 	});
