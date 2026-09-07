@@ -69,6 +69,7 @@ if (!$res) {
  * @var User $user
  */
 include_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+dol_include_once('/ezcompta/lib/ezcompta.lib.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("ezcompta@ezcompta", "compta"));
@@ -120,14 +121,14 @@ SELECT b4a.fk_bank_account,
        bkr.datas
 FROM ".$db->prefix()."banking4dolibarr_bank_record as bkr
 INNER JOIN ".$db->prefix()."c_banking4dolibarr_bank_account as b4a ON b4a.rowid = bkr.id_account
-WHERE bkr.amount > 0
-  AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import)";
+WHERE bkr.amount >= 0
+  AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import WHERE import_key IS NOT NULL)";
 
 	$resql = $db->query($sql);
 	if (!$resql) {
 		setEventMessages($db->error(), null, 'errors');
 	} else {
-		setEventMessages($langs->trans('EzComptaRecordsInserted',$db->db->affected_rows,$langs->transnoentities('AccountingCredit')), null);
+		setEventMessages($langs->trans('EzComptaRecordsInserted', $db->affected_rows($resql), $langs->transnoentities('AccountingCredit')), null);
 	}
 
 	$sql = "INSERT INTO ".$db->prefix()."bank_import(id_account, record_type, label, record_type_origin, label_origin, comment, note, bdate,
@@ -160,13 +161,13 @@ SELECT b4a.fk_bank_account,
 FROM ".$db->prefix()."banking4dolibarr_bank_record as bkr
 INNER JOIN ".$db->prefix()."c_banking4dolibarr_bank_account as b4a ON b4a.rowid = bkr.id_account
 WHERE bkr.amount < 0
-  AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import)";
+  AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import WHERE import_key IS NOT NULL)";
 
 	$resql = $db->query($sql);
 	if (!$resql) {
 		setEventMessages($db->error(), null, 'errors');
 	} else {
-		setEventMessages($langs->trans('EzComptaRecordsInserted',$db->db->affected_rows,$langs->transnoentities('AccountingDebit')), null);
+		setEventMessages($langs->trans('EzComptaRecordsInserted', $db->affected_rows($resql), $langs->transnoentities('AccountingDebit')), null);
 	}
 }
 
@@ -185,6 +186,18 @@ print load_fiche_titre($langs->trans("EzCompta"), '', 'ezcompta.png@ezcompta');
 print '<div class="fichecenter">';
 
 if (isModEnabled("banking4dolibarr")) {
+	// Say what is waiting before asking the user to click, so the state of the data is never a guess
+	$pending = ezcomptaGetPendingTransferInfo($db);
+	if ($pending['nb'] > 0) {
+		$message = $langs->trans('EzComptaPendingTransferCount', $pending['nb']);
+		if (!empty($pending['firstdate'])) {
+			$message .= ' '.$langs->trans('EzComptaPendingTransferPeriod', dol_print_date($pending['firstdate'], 'day'), dol_print_date($pending['lastdate'], 'day'));
+		}
+		print '<div class="warning">'.$message.'</div>';
+	} else {
+		print '<div class="info">'.$langs->trans('EzComptaPendingTransferNone').'</div>';
+	}
+
 	print dolGetButtonAction('', $langs->trans('EzComptaTransfertDataToNewBankTable'), 'default', $_SERVER["PHP_SELF"].'?action=update_data&token='.newToken(), '', $user->hasRight("banque", "read"));
 }
 

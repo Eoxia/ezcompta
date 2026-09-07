@@ -75,6 +75,18 @@ $listorder = $ezcompta->makeListOfAccountingAccountsByAccountNumber($list);
 // Get First Level Accounting Accounts label
 $firstLevel = $ezcompta->getAccountingAccountsFirstLevel($accountancySystem->pcg_version);
 
+// The chart of accounts does not always start at 1: fall back on its first group instead of
+// dereferencing a missing key on every line of the page
+if (!empty($firstLevel) && !isset($firstLevel[$startwith])) {
+	$startwith = (int) array_key_first($firstLevel);
+	$list = $ezcompta->getAccountingAccountsByStartNumber($startwith, $accountancySystem->pcg_version);
+	$listorder = $ezcompta->makeListOfAccountingAccountsByAccountNumber($list);
+}
+
+// A chart of accounts without any one digit account (a custom plan for instance) leaves no group
+// to display: keep the page readable instead of dereferencing a missing entry on every line
+$currentGroup = isset($firstLevel[$startwith]) ? $firstLevel[$startwith] : array('id' => 0, 'label' => '', 'labelshort' => '', 'pcg_type' => '', 'nbitems' => 0);
+
 // Get maximum length for this accounting system
 $maxNumberAccountingAccounts = $ezcompta->getMaximumLengthForAccountingAccounts($accountancySystem->pcg_version);
 
@@ -149,7 +161,10 @@ print '<div id="ezcompta-main-wrapper">';
 		print '</ul>';
 	print '</div>';
 	print '<div class="ezcompta-content-wrapper">';
-		print '<h1>'.$startwith.'. '.$firstLevel[$startwith]['label'].'</h1>';
+		print '<h1>'.$startwith.'. '.$currentGroup['label'].'</h1>';
+		if (empty($firstLevel)) {
+			print '<div class="warning">'.$langs->trans('EzComptaNoFirstLevelAccount', $accountancySystem->pcg_version).'</div>';
+		}
 		print '<p class="opacitymedium">Description de cette partie comptable, unde Rufinus ea tempestate praefectus praetorio ad discrimen trusus est ultimum. ire enim ipse compellebatur ad militem, quem exagitabat inopia simul et feritas, et alioqui coalito more in ordinarias dignitates asperum semper et saevum, ut satisfaceret atque monstraret, quam ob causam annonae convectio sit impedita.</p>';
 
 		$level = 2;
@@ -170,7 +185,7 @@ print '<div id="ezcompta-main-wrapper">';
 			$nbX = $ezcompta->maximumDepth - strlen($current);
 
 			print '<li>';
-				print '<form class="ezcompta-editline-form account-cardline-header" method="POST" action="'.$_SERVER['PHP_SELF'].'?startwith='.$startwith.'" id="line-'.$current.'" data-label="'.$dataLabel.'" data-level="'.$level.'" data-parent="'.$firstLevel[$startwith]['id'].'" data-accountexist="'.($accountExist ? 1 : 0).'" data-pcgtype="'.$firstLevel[$startwith]['pcg_type'].'">';
+				print '<form class="ezcompta-editline-form account-cardline-header" method="POST" action="'.$_SERVER['PHP_SELF'].'?startwith='.$startwith.'" id="line-'.$current.'" data-label="'.$dataLabel.'" data-level="'.$level.'" data-parent="'.$currentGroup['id'].'" data-accountexist="'.($accountExist ? 1 : 0).'" data-pcgtype="'.$currentGroup['pcg_type'].'">';
 				if ($editLine) {
 					print '<div class="cardline-header-title">';
 						print '<span class="fas fa-clipboard-list paddingright"></span> <b>'.$current.'<span class="opacitymedium">'.$ezcompta->showX($nbX).'</span></b> - ';
@@ -220,7 +235,7 @@ print '<div id="ezcompta-main-wrapper">';
 				print '<ul class="firstlevel" id="subaccountlist-'.$current.'">';
 					$dataParent = $accountExist ? $currentAccount->id : 0;
 					if ($accountExist) {
-						print $ezcompta->recursiveListAccountingAccounts($current, $listorder, $action, $level, $dataParent, $firstLevel[$startwith]['pcg_type']);
+						print $ezcompta->recursiveListAccountingAccounts($current, $listorder, $action, $level, $dataParent, $currentGroup['pcg_type']);
 					}
 				print '</ul>';
 			//print '</form>';
@@ -244,7 +259,7 @@ print '</div>';
 
 		var startwith = '<?php echo $startwith; ?>';
 		var token = '<?php echo newToken(); ?>';
-		var link = '<?php echo dol_buildpath('ezcompta/index.php?startwith='.$startwith, 1); ?>';
+		var link = '<?php echo dol_buildpath('ezcompta/ezcompta_account_treeview.php?startwith='.$startwith, 1); ?>';
 		var emptylabel = '<span class="opacitymedium"><?php echo $langs->transnoentities('AccountingAccountNotExist'); ?></span>';
 
 		// ENABLE - DISABLE

@@ -61,7 +61,8 @@ class FormEzCompta extends Form
 		$options = array();
 		$sql = "SELECT b.rowid, b.label";
 		$sql .= " FROM " . $this->db->prefix() . "bank_account as b";
-		$sql .= " WHERE clos = 0";
+		$sql .= " WHERE b.clos = 0";
+		$sql .= " AND b.entity IN (" . getEntity('bank_account') . ")";
 		$sql .= " ORDER BY b.label";
 		$resql = $this->db->query($sql);
 		if ($resql) {
