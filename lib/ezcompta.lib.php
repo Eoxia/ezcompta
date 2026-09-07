@@ -44,3 +44,44 @@ function ezcomptaAdminPrepareHead()
 	complete_head_from_modules($conf, $langs, null, $head, $h, 'ezcompta@ezcompta', 'remove');
     return $head;
 }
+
+/**
+ * Count the records already downloaded by banking4dolibarr but not transferred yet into the
+ * bank statement table read by EzCompta. Those records are missing from every EzCompta report
+ * until the transfer is run again.
+ *
+ * @param	DoliDB	$db				Database handler
+ * @param	int[]	$bankaccounts	Restrict to those Dolibarr bank account ids (empty = all accounts of the entity)
+ * @return	array{nb:int,lastdate:int|string,firstdate:int|string}	Counters, nb = 0 when nothing is pending
+ */
+function ezcomptaGetPendingTransferInfo($db, $bankaccounts = array())
+{
+	$info = array('nb' => 0, 'lastdate' => '', 'firstdate' => '');
+
+	if (!isModEnabled('banking4dolibarr')) {
+		return $info;
+	}
+
+	$sql = "SELECT COUNT(bkr.rowid) as nb, MIN(bkr.bdate) as firstdate, MAX(bkr.bdate) as lastdate";
+	$sql .= " FROM ".$db->prefix()."banking4dolibarr_bank_record as bkr";
+	$sql .= " INNER JOIN ".$db->prefix()."c_banking4dolibarr_bank_account as b4a ON b4a.rowid = bkr.id_account";
+	$sql .= " INNER JOIN ".$db->prefix()."bank_account as ba ON ba.rowid = b4a.fk_bank_account";
+	$sql .= " WHERE ba.entity IN (".getEntity('bank_account').")";
+	if (!empty($bankaccounts)) {
+		$sql .= " AND b4a.fk_bank_account IN (".$db->sanitize(implode(',', array_map('intval', $bankaccounts))).")";
+	}
+	$sql .= " AND bkr.id_record NOT IN (SELECT import_key FROM ".$db->prefix()."bank_import WHERE import_key IS NOT NULL)";
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		$obj = $db->fetch_object($resql);
+		if ($obj) {
+			$info['nb'] = (int) $obj->nb;
+			$info['firstdate'] = $db->jdate($obj->firstdate);
+			$info['lastdate'] = $db->jdate($obj->lastdate);
+		}
+		$db->free($resql);
+	}
+
+	return $info;
+}
