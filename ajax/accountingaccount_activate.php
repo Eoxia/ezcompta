@@ -32,7 +32,16 @@ if (!defined('NOREQUIRESOC')) {
 }
 
 // Load Dolibarr environment
-require '../../../main.inc.php';
+$res = 0;
+if (!$res && file_exists("../../main.inc.php")) {
+	$res = @include "../../main.inc.php";
+}
+if (!$res && file_exists("../../../main.inc.php")) {
+	$res = @include "../../../main.inc.php";
+}
+if (!$res) {
+	die("Include of main fails");
+}
 require_once DOL_DOCUMENT_ROOT.'/accountancy/class/accountingaccount.class.php';
 
 $accountID = GETPOSTINT('accountid');
@@ -44,17 +53,20 @@ $result['toggleaction'] = $toggleaction;
 
 $accounting = new AccountingAccount($db);
 
+// Distinct de $res, qui porte le resultat du chargement de main.inc.php
+$toggleResult = 0;
+
 if ($toggleaction == 'disable' && $user->hasRight('accounting', 'chartofaccount')) {
 	if ($accounting->fetch($accountID)) {
-		$res = $accounting->accountDeactivate($accountID, 0);
+		$toggleResult = $accounting->accountDeactivate($accountID, 0);
 	}
 } elseif ($toggleaction == 'enable' && $user->hasRight('accounting', 'chartofaccount')) {
 	if ($accounting->fetch($accountID)) {
-		$res = $accounting->accountActivate($accountID, 0);
+		$toggleResult = $accounting->accountActivate($accountID, 0);
 	}
 }
 
-if ($res > 0) {
+if ($toggleResult > 0) {
 	$result['success'] = true;
 } else {
 	$result['success'] = false;
