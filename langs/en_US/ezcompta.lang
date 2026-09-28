@@ -1,0 +1,72 @@
+# <ezcompta>
+# Copyright (C) 2024 Anthony Damhet <a.damhet@progiseize.fr>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# Dolibarr language file - en_US - ezcompta
+
+Module999960Name=EzCompta
+AccountingAccountNotExist=Account does not exist
+EzComptaTransfertDataToNewBankTable=Transfer downloaded bank records to bank statements
+EzComptaRecordsInserted=%d bank record(s) transferred to %s
+
+#
+# Bank in/out report
+#
+EzComptaDataSourceTitle=Where the figures of this report come from
+EzComptaChainBank=Bank
+EzComptaChainBankDetail=Real operations
+EzComptaChainDownload=Download
+EzComptaChainTransfer=Transfer
+EzComptaChainTransferDetail=Button on EzCompta page
+EzComptaChainStatement=Imported statement
+EzComptaChainReport=This report
+EzComptaChainReportDetail=Sum per month of bdate
+EzComptaSourceTable=Table read
+EzComptaSourceTableDetail=imported bank statement, grouped by month of the operation date (bdate), on the selected accounts
+EzComptaSourcePeriod=Period read
+EzComptaSourcePeriodDetail=from %s to %s
+EzComptaSourceCovered=data available from %s to %s
+EzComptaSourceRecords=Records
+EzComptaSourceRecordsKept=%d kept
+EzComptaSourceRecordsOn=out of %d records found over the period, for %d selected account(s)
+EzComptaSourceExcluded=Left out of the computation
+EzComptaExcludedDeleted=%d deleted
+EzComptaExcludedDuplicate=%d duplicate(s)
+EzComptaExcludedCounted=currently COUNTED in the table (include checkbox ticked)
+EzComptaExcludedNotCounted=not counted in the table
+EzComptaSourceStatus=Statuses found
+EzComptaStatusUnknown=Status unknown to the module
+EzComptaSourceVsDolibarr=Comparison with Dolibarr
+EzComptaSourceVsDolibarrDetail=This report reads the bank statement, NOT the Dolibarr bank entries (llx_bank). A gap is expected when some operations are not recorded in Dolibarr.
+EzComptaStatementTotals=Statement: credit %s / debit %s
+EzComptaDolibarrTotals=Dolibarr: credit %s / debit %s
+EzComptaGapTotals=Gap: credit %s / debit %s
+EzComptaReconciledCount=%d statement record(s) reconciled with a Dolibarr entry out of %d kept
+EzComptaWarningPendingTransfer=%d record(s) downloaded by banking4dolibarr have not been transferred yet: they are missing from this report.
+EzComptaWarningPendingTransferUntil=They go up to %s.
+EzComptaWarningPendingTransferAction=Run the transfer
+EzComptaWarningNoDate=%d record(s) without operation date: invisible in this report whatever the period.
+EzComptaWarningWrongSign=%d record(s) with an unexpected sign (negative credit or positive debit): they are counted as absolute values.
+EzComptaWarningBothSides=%d record(s) carry both a non zero debit and a non zero credit: they are counted on both sides.
+EzComptaWarningNoAmount=%d record(s) with a zero amount.
+EzComptaIncludeExcluded=Include deleted records and duplicates
+EzComptaSeeRecords=%d record(s) - click to see the detail
+EzComptaClickRowHint=Click a month row to show the detail per bank account; clicking an amount of the detail opens the matching records.
+EzComptaMonthlyPerAccount=Monthly figures per bank account (credit - debit balance)
+EzComptaMonthlyPerAccountHint=Each cell is the balance of the month for that account. Hovering a value shows credit, debit and record count.
+EzComptaPendingTransferCount=%d record(s) downloaded by banking4dolibarr are waiting to be transferred: they show up in no EzCompta report until the transfer is run.
+EzComptaPendingTransferPeriod=They go from %s to %s.
+EzComptaPendingTransferNone=Every record downloaded by banking4dolibarr has already been transferred.
+EzComptaNoFirstLevelAccount=The chart of accounts "%s" holds no single digit account (1 to 9): the tree view has no group to show. Add the root accounts to the chart of accounts to use this page.

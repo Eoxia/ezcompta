@@ -17,18 +17,18 @@
  */
 
 /**
- *  \defgroup   mymodule     Module MyModule
+ *  \defgroup   ezcompta     Module EzCompta
  *  \brief      Example of a module descriptor.
- *              Such a file must be copied into htdocs/mymodule/core/modules directory.
- *  \file       htdocs/mymodule/core/modules/modMyModule.class.php
- *  \ingroup    mymodule
- *  \brief      Description and activation file for module MyModule
+ *              Such a file must be copied into htdocs/ezcompta/core/modules directory.
+ *  \file       htdocs/ezcompta/core/modules/modEzCompta.class.php
+ *  \ingroup    ezcompta
+ *  \brief      Description and activation file for module EzCompta
  */
 include_once DOL_DOCUMENT_ROOT .'/core/modules/DolibarrModules.class.php';
 
 
 /**
- *  Description and activation class for module MyModule
+ *  Description and activation class for module EzCompta
  */
 class ModEzCompta extends DolibarrModules
 {
@@ -66,8 +66,8 @@ class ModEzCompta extends DolibarrModules
         $this->editor_url = '';
 
         // Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
-        $this->version = '0.1.0';
-        // Key used in llx_const table to save module status enabled/disabled (where MYMODULE is value of property name of module in uppercase)
+        $this->version = '23.0.0';
+        // Key used in llx_const table to save module status enabled/disabled (where EZCOMPTA is value of property name of module in uppercase)
         $this->const_name = 'MAIN_MODULE_'.strtoupper($this->name);
         // Name of image file used for this module.
         // If file is in theme/yourtheme/img directory under name object_pictovalue.png, use this->picto='pictovalue'
@@ -75,9 +75,9 @@ class ModEzCompta extends DolibarrModules
         $this->picto = 'fa-book_fas_#681bb5';
 
         // Defined all module parts (triggers, login, substitutions, menus, css, etc...)
-        // for default path (eg: /mymodule/core/xxxxx) (0=disable, 1=enable)
-        // for specific path of parts (eg: /mymodule/core/modules/barcode)
-        // for specific css file (eg: /mymodule/css/mymodule.css.php)
+        // for default path (eg: /ezcompta/core/xxxxx) (0=disable, 1=enable)
+        // for specific path of parts (eg: /ezcompta/core/modules/barcode)
+        // for specific css file (eg: /ezcompta/css/ezcompta.css.php)
         //$this->module_parts = array(
         //                          'triggers' => 0,                                    // Set this to 1 if module has its own trigger directory (core/triggers)
         //                          'login' => 0,                                       // Set this to 1 if module has its own login method directory (core/login)
@@ -86,12 +86,12 @@ class ModEzCompta extends DolibarrModules
         //                          'theme' => 0,                                       // Set this to 1 if module has its own theme directory (theme)
         //                          'tpl' => 0,                                         // Set this to 1 if module overwrite template dir (core/tpl)
         //                          'barcode' => 0,                                     // Set this to 1 if module has its own barcode directory (core/modules/barcode)
-        //                          'models' => 0,                                      // Set this to 1 if module has its own models directory (core/modules/xxx)
-        //                          'css' => array('/mymodule/css/mymodule.css.php'),   // Set this to relative path of css file if module has its own css file
-        //                          'js' => array('/mymodule/js/mymodule.js'),          // Set this to relative path of js file if module must load a js on all pages
+        //                          'models' => 1,                                      // Set this to 1 if module has its own models directory (core/modules/xxx)
+        //                          'css' => array('/ezcompta/css/ezcompta.css.php'),   // Set this to relative path of css file if module has its own css file
+        //                          'js' => array('/ezcompta/js/ezcompta.js'),          // Set this to relative path of js file if module must load a js on all pages
         //                          'hooks' => array('hookcontext1','hookcontext2',...) // Set here all hooks context managed by module. You can also set hook context 'all'
         //                          'dir' => array('output' => 'othermodulename'),      // To force the default directories names
-        //                          'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@mymodule')) // Set here all workflow context managed by module
+        //                          'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@ezcompta')) // Set here all workflow context managed by module
         //                        );
         $this->module_parts = array(
             'triggers' => 0,
@@ -101,7 +101,7 @@ class ModEzCompta extends DolibarrModules
             'theme' => 0,
             'tpl' => 0,
             'barcode' => 0,
-            'models' => 0,
+            'models' => 1,
             'css' => array(),
             'js' => array(),
             'hooks' => array('all'),
@@ -110,19 +110,20 @@ class ModEzCompta extends DolibarrModules
         );
 
         // Data directories to create when module is enabled.
-        // Example: this->dirs = array("/mymodule/temp");
+        // Example: this->dirs = array("/ezcompta/temp");
         $this->dirs = array();
 
-        // Config pages. Put here list of php page, stored into mymodule/admin directory, to use to setup module.
-        $this->config_page_url = "";
+        // Config pages. Put here list of php page, stored into ezcompta/admin directory, to use to setup module.
+        $this->config_page_url = "setup.php@ezcompta";
 
         // Dependencies
         $this->hidden = false;          // A condition to hide module
         $this->depends = array();       // List of module class names as string that must be enabled if this module is enabled
         $this->requiredby = array();    // List of module ids to disable if this one is disabled
         $this->conflictwith = array();  // List of module class names as string this module is in conflict with
-        $this->phpmin = array(8,0);                 // Minimum version of PHP required by module
-        $this->need_dolibarr_version = array(20,0);  // Minimum version of Dolibarr required by module
+        $this->phpmin = array(7,4);                 // Minimum version of PHP required by module
+        $this->need_dolibarr_version = array(23,0);  // Minimum version of Dolibarr required by module
+        $this->max_dolibarr_version = array(24,0);  // Maximum version of Dolibarr supported by module
         $this->langfiles = array("ezcompta@ezcompta");
 
         // Constants
@@ -132,8 +133,8 @@ class ModEzCompta extends DolibarrModules
 
         // Array to add new pages in new tabs
         // Example: $this->tabs = array(
-        // 'objecttype:+tabname1:Title1:mylangfile@mymodule:$user->rights->mymodule->read:/mymodule/mynewtab1.php?id=__ID__',                      // To add a new tab identified by code tabname1
-        // 'objecttype:+tabname2:SUBSTITUTION_Title2:mylangfile@mymodule:$user->rights->othermodule->read:/mymodule/mynewtab2.php?id=__ID__',      // To add another new tab identified by code tabname2. Label will be result of calling all substitution functions on 'Title2' key.
+        // 'objecttype:+tabname1:Title1:mylangfile@ezcompta:$user->rights->ezcompta->read:/ezcompta/mynewtab1.php?id=__ID__',                      // To add a new tab identified by code tabname1
+        // 'objecttype:+tabname2:SUBSTITUTION_Title2:mylangfile@ezcompta:$user->rights->othermodule->read:/ezcompta/mynewtab2.php?id=__ID__',      // To add another new tab identified by code tabname2. Label will be result of calling all substitution functions on 'Title2' key.
         //                              'objecttype:-tabname:NU:conditiontoremove');                                                                                            // To remove an existing tab identified by code tabname
         // where objecttype can be
         // 'categories_x'     to add a tab in category view (replace 'x' by type of category (0=product, 1=supplier, 2=customer, 3=member)
@@ -167,7 +168,7 @@ class ModEzCompta extends DolibarrModules
         $this->dictionaries=array();
         /* Example:
         $this->dictionaries=array(
-            'langs'=>'mylangfile@mymodule',
+            'langs'=>'mylangfile@ezcompta',
             'tabname'=>array(MAIN_DB_PREFIX."table1",MAIN_DB_PREFIX."table2",MAIN_DB_PREFIX."table3"),      // List of tables we want to see into dictonnary editor
             'tablib'=>array("Table1","Table2","Table3"),                                                    // Label of tables
             'tabsql'=>array('SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table1 as f','SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table2 as f','SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table3 as f'),   // Request to select fields
@@ -176,7 +177,7 @@ class ModEzCompta extends DolibarrModules
             'tabfieldvalue'=>array("code,label","code,label","code,label"),                                                                             // List of fields (list of fields to edit a record)
             'tabfieldinsert'=>array("code,label","code,label","code,label"),                                                                            // List of fields (list of fields for insert)
             'tabrowid'=>array("rowid","rowid","rowid"),                                                                                                 // Name of columns with primary key (try to always name it 'rowid')
-            'tabcond'=>array($conf->mymodule->enabled,$conf->mymodule->enabled,$conf->mymodule->enabled)                                                // Condition to show each dictionary
+            'tabcond'=>array($conf->ezcompta->enabled,$conf->ezcompta->enabled,$conf->ezcompta->enabled)                                                // Condition to show each dictionary
         );
         */
 
@@ -187,9 +188,9 @@ class ModEzCompta extends DolibarrModules
         // List of boxes
         // Example:
         //$this->boxes=array(
-        //    0=>array('file'=>'myboxa.php@mymodule','note'=>'','enabledbydefaulton'=>'Home'),
-        //    1=>array('file'=>'myboxb.php@mymodule','note'=>''),
-        //    2=>array('file'=>'myboxc.php@mymodule','note'=>'')
+        //    0=>array('file'=>'myboxa.php@ezcompta','note'=>'','enabledbydefaulton'=>'Home'),
+        //    1=>array('file'=>'myboxb.php@ezcompta','note'=>''),
+        //    2=>array('file'=>'myboxc.php@ezcompta','note'=>'')
         //);
 
         // Cronjobs
@@ -220,7 +221,7 @@ class ModEzCompta extends DolibarrModules
             'titre'=> $langs->trans('EzCompta'),
             'mainmenu'=>'accountancy',
             'leftmenu'=>'ezcompta',
-            'url'=> '/ezcompta/index.php',
+            'url'=> '/ezcompta/ezcompta_index.php',
             'langs'=>'ezcompta@ezcompta',
             'position'=> $this->module_position + $r,
             'enabled' => 'isModEnabled("ezcompta")',
@@ -230,15 +231,61 @@ class ModEzCompta extends DolibarrModules
             'prefix' => '<span class="fas fa-book paddingright pictofixedwidth" style="color: #681bb5;"></span> '
         );
 
+		$this->menu[$r++]=array(
+			'fk_menu'=>'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',
+			'type'=>'left',
+			'titre'=> $langs->trans('EzCompta'),
+			'mainmenu'=>'accountancy',
+			'leftmenu'=>'ezcompta_account',
+			'url'=> '/ezcompta/ezcompta_account_treeview.php',
+			'langs'=>'ezcompta@ezcompta',
+			'position'=> $this->module_position + $r,
+			'enabled' => 'isModEnabled("ezcompta")',
+			'perms' => '$user->hasRight("accounting","chartofaccount")',
+			'target'=>'',
+			'user'=>0,
+			'prefix' => '<span class="fas fa-book paddingright pictofixedwidth" style="color: #681bb5;"></span> '
+		);
+
+		$this->menu[$r++]=array(
+			'fk_menu' => 'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type' => 'left',			                // This is a Left menu entry
+			'titre' => 'Rapport E/S bank',
+			'mainmenu' => 'accountancy',
+			'leftmenu' => 'ezcompta_report_in_out',
+			'url' => '/ezcompta/report_in_out.php',
+			'langs' => 'ezcompta@ezcompta',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("ezcompta")', // Define condition to show or hide menu entry. Use 'isModEnabled("ezcompta")' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms' => '$user->hasRight("banque", "read")',
+			'target' => '',
+			'user' => 0,				                // 0=Menu for internal users, 1=external users, 2=both
+		);
+
+		$this->menu[$r++]=array(
+			'fk_menu' => 'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type' => 'left',			                // This is a Left menu entry
+			'titre' => 'Relevés bancaire',
+			'mainmenu' => 'accountancy',
+			'leftmenu' => 'ezcompta_bank_statement',
+			'url' => '/ezcompta/bankstatement_list.php',
+			'langs' => 'ezcompta@ezcompta',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("ezcompta")', // Define condition to show or hide menu entry. Use 'isModEnabled("ezcompta")' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms' => '$user->hasRight("banque", "read")',
+			'target' => '',
+			'user' => 0,				                // 0=Menu for internal users, 1=external users, 2=both
+		);
+
         // Exports
         $r=0;
 
         // Example:
         // $this->export_code[$r]=$this->rights_class.'_'.$r;
-        // $this->export_label[$r]='MyModule';  // Translation key (used only if key ExportDataset_xxx_z not found)
+        // $this->export_label[$r]='EzCompta';  // Translation key (used only if key ExportDataset_xxx_z not found)
         // $this->export_enabled[$r]='1';                               // Condition to show export in list (ie: '$user->id==3'). Set to 1 to always show when module is enabled.
-        // $this->export_icon[$r]='generic:MyModule';                   // Put here code of icon then string for translation key of module name
-        // $this->export_permission[$r]=array(array("mymodule","level1","level2"));
+        // $this->export_icon[$r]='generic:EzCompta';                   // Put here code of icon then string for translation key of module name
+        // $this->export_permission[$r]=array(array("ezcompta","level1","level2"));
         // $this->export_fields_array[$r]=array('s.rowid'=>"IdCompany",'s.nom'=>'CompanyName','s.address'=>'Address','s.zip'=>'Zip','s.town'=>'Town','s.fk_pays'=>'Country','s.phone'=>'Phone','s.siren'=>'ProfId1','s.siret'=>'ProfId2','s.ape'=>'ProfId3','s.idprof4'=>'ProfId4','s.code_compta'=>'CustomerAccountancyCode','s.code_compta_fournisseur'=>'SupplierAccountancyCode','f.rowid'=>"InvoiceId",'f.facnumber'=>"InvoiceRef",'f.datec'=>"InvoiceDateCreation",'f.datef'=>"DateInvoice",'f.total'=>"TotalHT",'f.total_ttc'=>"TotalTTC",'f.tva'=>"TotalVAT",'f.paye'=>"InvoicePaid",'f.fk_statut'=>'InvoiceStatus','f.note'=>"InvoiceNote",'fd.rowid'=>'LineId','fd.description'=>"LineDescription",'fd.price'=>"LineUnitPrice",'fd.tva_tx'=>"LineVATRate",'fd.qty'=>"LineQty",'fd.total_ht'=>"LineTotalHT",'fd.total_tva'=>"LineTotalTVA",'fd.total_ttc'=>"LineTotalTTC",'fd.date_start'=>"DateStart",'fd.date_end'=>"DateEnd",'fd.fk_product'=>'ProductId','p.ref'=>'ProductRef');
         // $this->export_TypeFields_array[$r]=array('t.date'=>'Date', 't.qte'=>'Numeric', 't.poids'=>'Numeric', 't.fad'=>'Numeric', 't.paq'=>'Numeric', 't.stockage'=>'Numeric', 't.fadparliv'=>'Numeric', 't.livau100'=>'Numeric', 't.forfait'=>'Numeric', 's.nom'=>'Text','s.address'=>'Text','s.zip'=>'Text','s.town'=>'Text','c.code'=>'Text','s.phone'=>'Text','s.siren'=>'Text','s.siret'=>'Text','s.ape'=>'Text','s.idprof4'=>'Text','s.code_compta'=>'Text','s.code_compta_fournisseur'=>'Text','s.tva_intra'=>'Text','f.facnumber'=>"Text",'f.datec'=>"Date",'f.datef'=>"Date",'f.date_lim_reglement'=>"Date",'f.total'=>"Numeric",'f.total_ttc'=>"Numeric",'f.tva'=>"Numeric",'f.paye'=>"Boolean",'f.fk_statut'=>'Status','f.note_private'=>"Text",'f.note_public'=>"Text",'fd.description'=>"Text",'fd.subprice'=>"Numeric",'fd.tva_tx'=>"Numeric",'fd.qty'=>"Numeric",'fd.total_ht'=>"Numeric",'fd.total_tva'=>"Numeric",'fd.total_ttc'=>"Numeric",'fd.date_start'=>"Date",'fd.date_end'=>"Date",'fd.special_code'=>'Numeric','fd.product_type'=>"Numeric",'fd.fk_product'=>'List:product:label','p.ref'=>'Text','p.label'=>'Text','p.accountancy_code_sell'=>'Text');
         // $this->export_entities_array[$r]=array('s.rowid'=>"company",'s.nom'=>'company','s.address'=>'company','s.zip'=>'company','s.town'=>'company','s.fk_pays'=>'company','s.phone'=>'company','s.siren'=>'company','s.siret'=>'company','s.ape'=>'company','s.idprof4'=>'company','s.code_compta'=>'company','s.code_compta_fournisseur'=>'company','f.rowid'=>"invoice",'f.facnumber'=>"invoice",'f.datec'=>"invoice",'f.datef'=>"invoice",'f.total'=>"invoice",'f.total_ttc'=>"invoice",'f.tva'=>"invoice",'f.paye'=>"invoice",'f.fk_statut'=>'invoice','f.note'=>"invoice",'fd.rowid'=>'invoice_line','fd.description'=>"invoice_line",'fd.price'=>"invoice_line",'fd.total_ht'=>"invoice_line",'fd.total_tva'=>"invoice_line",'fd.total_ttc'=>"invoice_line",'fd.tva_tx'=>"invoice_line",'fd.qty'=>"invoice_line",'fd.date_start'=>"invoice_line",'fd.date_end'=>"invoice_line",'fd.fk_product'=>'product','p.ref'=>'product');

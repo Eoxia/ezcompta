@@ -42,19 +42,21 @@ $res=0;
 if (! $res && file_exists("../main.inc.php")): $res=@include '../main.inc.php'; endif;
 if (! $res && file_exists("../../main.inc.php")): $res=@include '../../main.inc.php'; endif;
 
-
-/************************************************
-*  FICHIERS NECESSAIRES
-************************************************/
-
 // Protection if external user
 if ($user->socid > 0): accessforbidden(); endif;
+
+require_once DOL_DOCUMENT_ROOT.'/accountancy/class/accountancysystem.class.php';
+require_once DOL_DOCUMENT_ROOT.'/accountancy/class/accountingaccount.class.php';
+dol_include_once('/ezcompta/class/ezcompta.class.php');
 
 
 /*******************************************************************
 * VARIABLES
 ********************************************************************/
 $action = GETPOST('action');
+
+$accountancySystem = new AccountancySystem($db);
+$accountancySystem->fetch(getDolGlobalInt('CHARTOFACCOUNTS'));
 
 /*******************************************************************
 * ACTIONS
@@ -66,9 +68,6 @@ $action = GETPOST('action');
 $js_array = array();
 $css_array = array('/ezcompta/assets/css/ezcompta.css');
 llxHeader('', $langs->trans('EzCompta'), '', '', 0, 0, $js_array, $css_array, '', 'mod-ezcompta page-index');
-
-//print load_fiche_titre($langs->trans('EzCompta'), '', 'fa-book_fas_#681bb5');
-
 ?>
 
 <div id="ezcompta-main-wrapper">
