@@ -1,0 +1,817 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Class ModEzCompta referenced with incorrect case\: modEzCompta\.$#'
+			identifier: class.nameCase
+			count: 1
+			path: admin/about.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: admin/about.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: admin/bankstatement_extrafields.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: admin/setup.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: admin/setup.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: ajax/accountingaccount_activate.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ajax/accountingaccount_activate.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ajax/accountingaccount_activate.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: ajax/accountingaccount_editlabel.php
+
+		-
+			message: '#^Parameter \#1 \$startNumber of method EzCompta\:\:getAccountingAccountsByStartNumber\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ajax/accountingaccount_editlabel.php
+
+		-
+			message: '#^Parameter \#2 \$pcgVersion of method EzCompta\:\:getAccountingAccountsByStartNumber\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ajax/accountingaccount_editlabel.php
+
+		-
+			message: '#^Parameter \#3 \$limittocurrentchart of method AccountingAccount\:\:fetch\(\) expects bool\|int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ajax/accountingaccount_editlabel.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ajax/accountingaccount_editlabel.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: ajax/accountingaccount_editlabel.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: ajax/bankstatement.php
+
+		-
+			message: '#^Parameter \#1 \$id of method BankStatement\:\:fetch\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ajax/bankstatement.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with 0 will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: bankstatement_agenda.php
+
+		-
+			message: '#^Call to function property_exists\(\) with BankStatement and ''module'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: bankstatement_agenda.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: bankstatement_agenda.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: bankstatement_card.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 1
+			path: bankstatement_card.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: bankstatement_card.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: bankstatement_contact.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: bankstatement_document.php
+
+		-
+			message: '#^Variable \$upload_dir might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: bankstatement_document.php
+
+		-
+			message: '#^Cannot access property \$nbtotalofrecords on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Cannot access property \$rowid on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Offset ''helplist'' does not exist on array\{type\: string, label\: string, langfile\?\: string, enabled\: int\<0, 2\>\|string, position\: int, notnull\?\: int, visible\: int\<\-6, 6\>\|string, alwayseditable\?\: int\<0, 1\>\|string, \.\.\.\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Parameter \#2 \$arraydata of method BankStatement\:\:getKanbanView\(\) expects array\<string, string\>\|null, array\<string, int\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Parameter \#3 \$selected of method Form\:\:multiselectarray\(\) expects array\<string\>, int\|string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Parameter \#3 \$value of method CommonObject\:\:showOutputField\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: bankstatement_list.php
+
+		-
+			message: '#^Call to function method_exists\(\) with \$this\(BankStatement\) and ''getLibStatut'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function method_exists\(\) with \$this\(BankStatement\) and ''getNomUrl'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with \$this\(BankStatement\) and ''label'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with \$this\(BankStatement\) and ''ref'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with \$this\(BankStatement\) and ''thirdparty'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with BankStatement and ''date_creation'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with BankStatement and ''date_modification'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with BankStatement and ''label'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with BankStatement and ''ref'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Call to function property_exists\(\) with BankStatement and ''status'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Cannot access property \$datec on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Cannot access property \$fk_user_creat on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Cannot access property \$fk_user_modif on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Cannot access property \$fk_user_valid on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Cannot access property \$rowid on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Left side of && is always false\.$#'
+			identifier: booleanAnd.leftAlwaysFalse
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Left side of && is always true\.$#'
+			identifier: booleanAnd.leftAlwaysTrue
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Parameter \#1 \$params of method BankStatement\:\:getTooltipContentArray\(\) expects array\<string, string\>, array\<string, int\|string\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$amount_credit has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$amount_debit has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$bdate has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$comment has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$datas has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$date_scraped has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$datec has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$deleted_date has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$fk_duplicate_of has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$fk_user_author has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$id_account has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$label has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$label_origin has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$original_amount has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$original_currency has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$record_type has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$record_type_origin has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$rowid has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Property BankStatement\:\:\$vdate has no type specified\.$#'
+			identifier: missingType.property
+			count: 1
+			path: class/bankstatement.class.php
+
+		-
+			message: '#^Cannot access property \$count on object\|false\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Cannot access property \$max on object\|false\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Default value of the parameter \#3 \$mode \(string\) of method EzCompta\:\:getAccountingAccountsByStartNumber\(\) is incompatible with type int\.$#'
+			identifier: parameter.defaultValue
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:getAccountingAccountsByStartNumber\(\) should return array\|int but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:getMaximumLengthForAccountingAccounts\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:getMaximumLengthForAccountingAccounts\(\) has parameter \$pcgVersion with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) has parameter \$accountingAccountsList with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) has parameter \$action with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) has parameter \$level with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) has parameter \$parentAccountNumber with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) has parameter \$parentID with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) has parameter \$pcgType with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:recursiveListAccountingAccounts\(\) should return int but returns string\.$#'
+			identifier: return.type
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:showX\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method EzCompta\:\:showX\(\) has parameter \$nb with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$listAccountingAccounts$#'
+			identifier: parameter.notFound
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Parameter \#1 \$startNumber of method EzCompta\:\:getAccountingAccountsByStartNumber\(\) expects int, string\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Parameter \#1 \$stringtoencode of method Database\:\:escape\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 3
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Parameter \#3 \$mode of method EzCompta\:\:getAccountingAccountsByStartNumber\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Undefined variable\: \$langs$#'
+			identifier: variable.undefined
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Variable \$currentAccount might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: class/ezcompta.class.php
+
+		-
+			message: '#^Method FormEzCompta\:\:getBankAccounts\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: class/html.formezcompta.class.php
+
+		-
+			message: '#^Method FormEzCompta\:\:selectBankAccounts\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: class/html.formezcompta.class.php
+
+		-
+			message: '#^Method FormEzCompta\:\:selectBankAccounts\(\) has parameter \$htmlname with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/html.formezcompta.class.php
+
+		-
+			message: '#^Method FormEzCompta\:\:selectBankAccounts\(\) has parameter \$selected with no type specified\.$#'
+			identifier: missingType.parameter
+			count: 1
+			path: class/html.formezcompta.class.php
+
+		-
+			message: '#^Parameter \#1 \$line of method CommonDocGenerator\:\:get_substitutionarray_lines\(\) expects CommonObjectLine, CommonObject\|stdClass given\.$#'
+			identifier: argument.type
+			count: 1
+			path: core/modules/ezcompta/doc/doc_generic_bankstatement_odt.modules.php
+
+		-
+			message: '#^Parameter \#3 \$encode of method Segment\:\:setVars\(\) expects string, true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: core/modules/ezcompta/doc/doc_generic_bankstatement_odt.modules.php
+
+		-
+			message: '#^Call to function is_object\(\) with object will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Cannot call method get_prev_progress\(\) on CommonObject\|stdClass\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^PHPDoc type array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\> of property pdf_standard_bankstatement\:\:\$cols is not covariant with PHPDoc type array\<string, array\{rank\: int, width\: float\|false, status\: bool\|int\<0, 1\>, border\-left\?\: bool, title\: array\{textkey\: string, label\?\: string, align\?\: string, padding\?\: array\{float, float, float, float\}\}, content\?\: array\{align\?\: string, padding\?\: array\{float, float, float, float\}\}\}\> of overridden property CommonDocGenerator\:\:\$cols\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Parameter \#1 \$auto of method TCPDF\:\:setAutoPageBreak\(\) expects bool, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Parameter \#1 \$object of function pdf_getlineqty expects Asset\|Commande\|CommandeFournisseur\|Delivery\|Facture\|FactureFournisseur\|MyObject\|Propal\|StockTransfer\|SupplierProposal, BankStatement given\.$#'
+			identifier: argument.type
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Parameter \#2 \$autopagebreak of method TCPDF\:\:setPageOrientation\(\) expects bool\|null, int given\.$#'
+			identifier: argument.type
+			count: 8
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Parameter \#6 \$fill of method TCPDF\:\:MultiCell\(\) expects bool, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 0, width\: false, status\: true, title\: array\{textkey\: ''Designation'', align\: ''L'', padding\: array\{0\.5, 0\.5, 0\.5, 0\.5\}\}, content\: array\{align\: ''L'', padding\: array\{1, 0\.5, 1, 1\.5\}\}\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 10, status\: false, width\: 16, title\: array\{textkey\: ''VAT''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 10, status\: true, width\: 16, title\: array\{textkey\: ''VAT''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 1050, width\: 26, status\: true, title\: array\{textkey\: ''TotalHTShort''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 20, width\: 19, status\: true, title\: array\{textkey\: ''PriceUHT''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 30, width\: 16, status\: true, title\: array\{textkey\: ''Qty''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 40, width\: 11, status\: false, title\: array\{textkey\: ''Unit''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 40, width\: 11, status\: true, title\: array\{textkey\: ''Unit''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 50, width\: 13, status\: false, title\: array\{textkey\: ''ReductionShort''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Property pdf_standard_bankstatement\:\:\$cols \(array\<string, array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\) does not accept non\-empty\-array\<string, array\{rank\: 50, width\: 13, status\: true, title\: array\{textkey\: ''ReductionShort''\}, border\-left\: true\}\|array\{rank\: int, width\: float\|int, status\: bool, title\: array\{textkey\: string, label\: string, align\: string, padding\: array\{float, float, float, float\}\}, content\: array\{align\: string, padding\: array\{float, float, float, float\}\}\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/ezcompta/doc/pdf_standard_bankstatement.modules.php
+
+		-
+			message: '#^Parameter \#4 \$type of method Form\:\:textwithpicto\(\) expects string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: core/modules/ezcompta/mod_bankstatement_advanced.php
+
+		-
+			message: '#^Property DolibarrModules\:\:\$menu \(1\|array\<array\{commentgroup\?\: string, mainmenu\: string, leftmenu\: string, langs\: string, enabled\: int\|string, target\: string, titre\: string, user\: int, \.\.\.\}\>\) does not accept non\-empty\-array\<array\{commentgroup\?\: string, mainmenu\: string, leftmenu\: string, langs\: string, enabled\: int\|string, target\: string, titre\: string, user\: int, \.\.\.\}\|array\{fk_menu\: ''fk_mainmenu…'', type\: ''left'', titre\: mixed, mainmenu\: ''accountancy'', leftmenu\: ''ezcompta'', url\: ''/ezcompta/ezcompta…'', langs\: ''ezcompta@ezcompta'', position\: 1000, \.\.\.\}\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/modEzCompta.class.php
+
+		-
+			message: '#^Property DolibarrModules\:\:\$module_position \(string\) does not accept int\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: core/modules/modEzCompta.class.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Parameter \#1 \$pcgVersion of method EzCompta\:\:getAccountingAccountsFirstLevel\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Parameter \#2 \$pcgVersion of method EzCompta\:\:getAccountingAccountsByStartNumber\(\) expects int, string given\.$#'
+			identifier: argument.type
+			count: 2
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Path in include\(\) "\.\./main\.inc\.php" is not a file or it does not exist\.$#'
+			identifier: include.fileNotFound
+			count: 1
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Variable \$currentAccount might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Variable \$langs might not be defined\.$#'
+			identifier: variable.undefined
+			count: 6
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: ezcompta_account_treeview.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: ezcompta_index.php
+
+		-
+			message: '#^Function ezcomptaAdminPrepareHead\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: lib/ezcompta.lib.php
+
+		-
+			message: '#^If condition is always true\.$#'
+			identifier: if.alwaysTrue
+			count: 4
+			path: lib/ezcompta_bankstatement.lib.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: report_in_out.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: tpl.php
+
+		-
+			message: '#^Path in include\(\) "\.\./main\.inc\.php" is not a file or it does not exist\.$#'
+			identifier: include.fileNotFound
+			count: 1
+			path: tpl.php
+
+		-
+			message: '#^Variable \$db might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: tpl.php
+
+		-
+			message: '#^Variable \$langs might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: tpl.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: tpl.php
