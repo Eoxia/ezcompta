@@ -45,25 +45,25 @@ class ModEzCompta extends DolibarrModules
 
         // Id for module (must be unique).
         // Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
-        $this->numero = 999960;     // TODO Go on page http://wiki.dolibarr.org/index.php/List_of_modules_id to reserve id number for your module
+        $this->numero = 436354;
         // Key text used to identify module (for permissions, menus, etc...)
         $this->rights_class = 'ezcompta';
 
         // Family can be 'crm','financial','hr','projects','products','ecm','technic','interface','other'
         // It is used to group modules by family in module setup page
-        $this->family = "financial";
+        $this->family = '';
         // Module position in the family
-        $this->module_position = 999;
+        $this->module_position = '01';
         // Gives the possibility to the module, to provide his own family info and position of this family (Overwrite $this->family and $this->module_position. Avoid this)
-        //$this->familyinfo = array('myownfamily' => array('position' => '001', 'label' => $langs->trans("MyOwnFamily")));
+        $this->familyinfo = array('Eoxia' => array('position' => '01', 'label' => 'Eoxia'));
 
         // Module label (no space allowed), used if translation string 'ModuleXXXName' not found (where XXX is value of numeric property 'numero' of module)
         $this->name = preg_replace('/^mod/i','',get_class($this));
         // Module description, used if translation string 'ModuleXXXDesc' not found (where XXX is value of numeric property 'numero' of module)
         $this->description = 'Comptabilité simplifiée';
         $this->descriptionlong = "Comptabilité simplifiée";
-        $this->editor_name = 'Progiseize';
-        $this->editor_url = '';
+        $this->editor_name = 'Eoxia';
+        $this->editor_url = 'https://www.eoxia.com';
 
         // Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
         $this->version = '23.0.0';
