@@ -16,7 +16,7 @@
 
 # Dolibarr language file - en_US - ezcompta
 
-Module999960Name=EzCompta
+Module436354Name=EzCompta
 AccountingAccountNotExist=Account does not exist
 EzComptaTransfertDataToNewBankTable=Transfer downloaded bank records to bank statements
 EzComptaRecordsInserted=%d bank record(s) transferred to %s
