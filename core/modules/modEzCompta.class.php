@@ -53,7 +53,7 @@ class ModEzCompta extends DolibarrModules
         // It is used to group modules by family in module setup page
         $this->family = '';
         // Module position in the family
-        $this->module_position = '01';
+        $this->module_position = 999;
         // Gives the possibility to the module, to provide his own family info and position of this family (Overwrite $this->family and $this->module_position. Avoid this)
         $this->familyinfo = array('Eoxia' => array('position' => '01', 'label' => 'Eoxia'));
 
