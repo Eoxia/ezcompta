@@ -137,7 +137,7 @@ class BankRecord extends CommonObject
 	public $date_valid;
 
 	/**
-	 * @var array Lines of statement
+	 * @var array<CommonObject|stdClass> Lines of statement
 	 */
 	public $lines = array();
 
@@ -157,7 +157,7 @@ class BankRecord extends CommonObject
 	 *
 	 * @param  User $user      User that creates
 	 * @param  int  $notrigger 0=launch triggers after, 1=disable triggers
-	 * @return int             <0 if KO, id of created object if OK
+	 * @return int             Return integer <0 if KO, id of created object if OK
 	 */
 	public function create(User $user, $notrigger = 0)
 	{
@@ -211,7 +211,7 @@ class BankRecord extends CommonObject
 	 *
 	 * @param  int    $id  ID of record
 	 * @param  string $ref Ref of record
-	 * @return int         <0 if KO, >0 if OK
+	 * @return int         Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
 	public function fetch($id, $ref = null)
 	{
@@ -230,27 +230,28 @@ class BankRecord extends CommonObject
 		if ($resql) {
 			if ($this->db->num_rows($resql)) {
 				$obj = $this->db->fetch_object($resql);
+				if ($obj) {
+					$this->id = (int) $obj->rowid;
+					$this->rowid = (int) $obj->rowid;
+					$this->ref = $obj->ref;
+					$this->fk_bank = (int) $obj->fk_bank;
+					$this->dt_from = $this->db->jdate($obj->dt_from);
+					$this->dt_to = $this->db->jdate($obj->dt_to);
+					$this->opening_balance = $obj->opening_balance !== null ? (float) $obj->opening_balance : null;
+					$this->closing_balance = $obj->closing_balance !== null ? (float) $obj->closing_balance : null;
+					$this->total_debit = $obj->total_debit !== null ? (float) $obj->total_debit : null;
+					$this->total_credit = $obj->total_credit !== null ? (float) $obj->total_credit : null;
+					$this->nb_operations = $obj->nb_operations !== null ? (int) $obj->nb_operations : null;
+					$this->status = (int) $obj->status;
+					$this->fk_user_author = (int) $obj->fk_user_author;
+					$this->fk_user_valid = (int) $obj->fk_user_valid;
+					$this->note = $obj->note;
+					$this->date_creation = $this->db->jdate($obj->date_creation);
+					$this->date_valid = $this->db->jdate($obj->date_valid);
 
-				$this->id = (int) $obj->rowid;
-				$this->rowid = (int) $obj->rowid;
-				$this->ref = $obj->ref;
-				$this->fk_bank = (int) $obj->fk_bank;
-				$this->dt_from = $this->db->jdate($obj->dt_from);
-				$this->dt_to = $this->db->jdate($obj->dt_to);
-				$this->opening_balance = $obj->opening_balance !== null ? (float) $obj->opening_balance : null;
-				$this->closing_balance = $obj->closing_balance !== null ? (float) $obj->closing_balance : null;
-				$this->total_debit = $obj->total_debit !== null ? (float) $obj->total_debit : null;
-				$this->total_credit = $obj->total_credit !== null ? (float) $obj->total_credit : null;
-				$this->nb_operations = $obj->nb_operations !== null ? (int) $obj->nb_operations : null;
-				$this->status = (int) $obj->status;
-				$this->fk_user_author = (int) $obj->fk_user_author;
-				$this->fk_user_valid = (int) $obj->fk_user_valid;
-				$this->note = $obj->note;
-				$this->date_creation = $this->db->jdate($obj->date_creation);
-				$this->date_valid = $this->db->jdate($obj->date_valid);
-
-				$this->db->free($resql);
-				return 1;
+					$this->db->free($resql);
+					return 1;
+				}
 			}
 			$this->db->free($resql);
 			return 0;
@@ -265,7 +266,7 @@ class BankRecord extends CommonObject
 	 *
 	 * @param  User $user      User that updates
 	 * @param  int  $notrigger 0=launch triggers, 1=disable
-	 * @return int             <0 if KO, >0 if OK
+	 * @return int             Return integer <0 if KO, >0 if OK
 	 */
 	public function update(User $user, $notrigger = 0)
 	{
@@ -298,7 +299,7 @@ class BankRecord extends CommonObject
 	 *
 	 * @param  User $user      User that deletes
 	 * @param  int  $notrigger 0=launch triggers, 1=disable
-	 * @return int             <0 if KO, >0 if OK
+	 * @return int             Return integer <0 if KO, >0 if OK
 	 */
 	public function delete(User $user, $notrigger = 0)
 	{
@@ -324,7 +325,7 @@ class BankRecord extends CommonObject
 	 * Link an imported line from llx_bank_import to this record
 	 *
 	 * @param  int $import_id ID of llx_bank_import row
-	 * @return int            <0 if KO, >0 if OK
+	 * @return int            Return integer <0 if KO, >0 if OK
 	 */
 	public function link_line($import_id)
 	{
