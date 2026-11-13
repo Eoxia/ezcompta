@@ -8,6 +8,7 @@
  * Copyright (C) 2014		Marcos García				<marcosgdf@gmail.com>
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2026		Florian Henry				<florian.henry@scopen.fr>
+ * Copyright (C) 2026		Laurent MAGNIN				<laurent.magnin@evarisk.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +34,13 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commondocgenerator.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonnumrefgenerator.class.php';
 
+dol_include_once('/ezcompta/class/bankrecord.class.php');
+if (!class_exists('BankStatement') && class_exists('BankRecord')) {
+	class_alias('BankRecord', 'BankStatement');
+}
+if (!class_exists('BankRecord') && class_exists('BankStatement')) {
+	class_alias('BankStatement', 'BankRecord');
+}
 
 /**
  *	Parent class for document models
@@ -90,8 +98,8 @@ abstract class ModeleNumRefBankStatement extends CommonNumRefGenerator
 	/**
 	 * 	Return next free value
 	 *
-	 *  @param  BankStatement		$object		Object we need next value for
-	 *  @return string|int<-1,0>			Next value if OK, <=0 if KO
+	 *  @param  BankStatement|BankRecord		$object		Object we need next value for
+	 *  @return string|int<-1,0>						Next value if OK, <=0 if KO
 	 */
 	abstract public function getNextValue($object);
 }

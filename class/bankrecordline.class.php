@@ -183,11 +183,11 @@ class BankRecordLine extends CommonObjectLine
 	/**
 	 * Create bank record line into database
 	 *
-	 * @param  User $user      User that creates
-	 * @param  int  $notrigger 0=launch triggers after, 1=disable triggers
-	 * @return int             Return integer <0 if KO, id of created line if OK
+	 * @param  User|null $user      User that creates
+	 * @param  int       $notrigger 0=launch triggers after, 1=disable triggers
+	 * @return int                  Return integer <0 if KO, id of created line if OK
 	 */
-	public function create(User $user, $notrigger = 0)
+	public function create($user = null, $notrigger = 0)
 	{
 		if (empty($this->fk_bank_record) || empty($this->bdate)) {
 			$this->error = 'ErrorMandatoryParametersNotProvided';
@@ -307,11 +307,11 @@ class BankRecordLine extends CommonObjectLine
 	/**
 	 * Update bank record line in database
 	 *
-	 * @param  User $user      User that updates
-	 * @param  int  $notrigger 0=launch triggers, 1=disable
-	 * @return int             Return integer <0 if KO, >0 if OK
+	 * @param  User|null $user      User that updates
+	 * @param  int       $notrigger 0=launch triggers, 1=disable
+	 * @return int                  Return integer <0 if KO, >0 if OK
 	 */
-	public function update(User $user, $notrigger = 0)
+	public function update($user = null, $notrigger = 0)
 	{
 		$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET ";
 		$sql .= "bdate = '".$this->db->idate($this->bdate)."', ";
@@ -349,11 +349,11 @@ class BankRecordLine extends CommonObjectLine
 	/**
 	 * Delete bank record line
 	 *
-	 * @param  User $user      User that deletes
-	 * @param  int  $notrigger 0=launch triggers, 1=disable
-	 * @return int             Return integer <0 if KO, >0 if OK
+	 * @param  User|null $user      User that deletes
+	 * @param  int       $notrigger 0=launch triggers, 1=disable
+	 * @return int                  Return integer <0 if KO, >0 if OK
 	 */
-	public function delete(User $user, $notrigger = 0)
+	public function delete($user = null, $notrigger = 0)
 	{
 		$sql = "DELETE FROM ".MAIN_DB_PREFIX.$this->table_element." WHERE rowid = ".((int) $this->id);
 		$resql = $this->db->query($sql);
@@ -362,6 +362,25 @@ class BankRecordLine extends CommonObjectLine
 		} else {
 			$this->error = $this->db->lasterror();
 			return -1;
+		}
+	}
+
+	/**
+	 * Return the status label or badge
+	 *
+	 * @param  int $mode 0=long label, 1=short label, 2=picto, 3=badge
+	 * @return string    Label or HTML badge
+	 */
+	public function getLibStatut($mode = 3)
+	{
+		global $langs;
+
+		if ($this->status == self::STATUS_RECONCILED) {
+			return '<span class="badge badge-status4 badge-status">'.$langs->trans("BankLineReconciled").'</span>';
+		} elseif ($this->status == self::STATUS_EXCLUDED) {
+			return '<span class="badge badge-status5 badge-status">'.$langs->trans("Excluded").'</span>';
+		} else {
+			return '<span class="badge badge-status0 badge-status">'.$langs->trans("BankLineNotReconciled").'</span>';
 		}
 	}
 }

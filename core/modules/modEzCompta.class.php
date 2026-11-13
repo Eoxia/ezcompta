@@ -265,9 +265,24 @@ class ModEzCompta extends DolibarrModules
 		$this->menu[$r++]=array(
 			'fk_menu' => 'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
 			'type' => 'left',			                // This is a Left menu entry
-			'titre' => 'Relevés bancaire',
+			'titre' => 'Tableau de bord relevés',
 			'mainmenu' => 'accountancy',
-			'leftmenu' => 'ezcompta_bank_statement',
+			'leftmenu' => 'ezcompta_bank_statement_dashboard',
+			'url' => '/ezcompta/bankstatement_dashboard.php',
+			'langs' => 'ezcompta@ezcompta',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("ezcompta")', // Define condition to show or hide menu entry. Use 'isModEnabled("ezcompta")' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
+			'perms' => '$user->hasRight("banque", "read")',
+			'target' => '',
+			'user' => 0,				                // 0=Menu for internal users, 1=external users, 2=both
+		);
+
+		$this->menu[$r++]=array(
+			'fk_menu' => 'fk_mainmenu=accountancy,fk_leftmenu=ezcompta',	    // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type' => 'left',			                // This is a Left menu entry
+			'titre' => 'Liste des relevés',
+			'mainmenu' => 'accountancy',
+			'leftmenu' => 'ezcompta_bank_statement_list',
 			'url' => '/ezcompta/bankstatement_list.php',
 			'langs' => 'ezcompta@ezcompta',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position' => 1000 + $r,
