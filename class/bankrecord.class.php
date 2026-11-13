@@ -23,6 +23,7 @@
  */
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once __DIR__.'/bankrecordline.class.php';
 
 /**
  * Class for BankRecord (Bank statement header)
@@ -48,6 +49,21 @@ class BankRecord extends CommonObject
 	public $table_element = 'bank_record';
 
 	/**
+	 * @var string Name of table without prefix where lines are stored.
+	 */
+	public $table_element_line = 'bank_record_det';
+
+	/**
+	 * @var string Class name of line object.
+	 */
+	public $class_element_line = 'BankRecordLine';
+
+	/**
+	 * @var string Foreign key in lines table pointing to parent object.
+	 */
+	public $fk_element = 'fk_bank_record';
+
+	/**
 	 * @var string String with name of icon for bankrecord.
 	 */
 	public $picto = 'fa-file-invoice-dollar';
@@ -67,6 +83,16 @@ class BankRecord extends CommonObject
 	public $ref;
 
 	/**
+	 * @var int Multi-company entity ID
+	 */
+	public $entity = 1;
+
+	/**
+	 * @var string|null External system reference / Open Banking ID
+	 */
+	public $ref_ext;
+
+	/**
 	 * @var int Foreign key to bank account (llx_bank_account.rowid)
 	 */
 	public $fk_bank;
@@ -82,27 +108,27 @@ class BankRecord extends CommonObject
 	public $dt_to;
 
 	/**
-	 * @var float Opening balance read on official bank PDF statement (ISO 20022: OPBD / MT940: :60F:)
+	 * @var float|null Opening balance read on official bank PDF statement (ISO 20022: OPBD / MT940: :60F:)
 	 */
 	public $opening_balance;
 
 	/**
-	 * @var float Closing balance read on official bank PDF statement (ISO 20022: CLBD / MT940: :62F:)
+	 * @var float|null Closing balance read on official bank PDF statement (ISO 20022: CLBD / MT940: :62F:)
 	 */
 	public $closing_balance;
 
 	/**
-	 * @var float Total debit read on official bank PDF statement (ISO 20022: TtlDbtNtries)
+	 * @var float|null Total debit read on official bank PDF statement (ISO 20022: TtlDbtNtries)
 	 */
 	public $total_debit;
 
 	/**
-	 * @var float Total credit read on official bank PDF statement (ISO 20022: TtlCdtNtries)
+	 * @var float|null Total credit read on official bank PDF statement (ISO 20022: TtlCdtNtries)
 	 */
 	public $total_credit;
 
 	/**
-	 * @var int Total number of operations/entries on the official bank statement (ISO 20022: NbOfNtries)
+	 * @var int|null Total number of operations/entries on the official bank statement (ISO 20022: NbOfNtries)
 	 */
 	public $nb_operations;
 
@@ -117,14 +143,44 @@ class BankRecord extends CommonObject
 	public $fk_user_author;
 
 	/**
-	 * @var int User validator ID
+	 * @var int|null User last modifier ID
+	 */
+	public $fk_user_modif;
+
+	/**
+	 * @var int|null User validator ID
 	 */
 	public $fk_user_valid;
 
 	/**
-	 * @var string Note / Comment
+	 * @var string|null Legacy note field
 	 */
 	public $note;
+
+	/**
+	 * @var string|null Private accounting notes
+	 */
+	public $note_private;
+
+	/**
+	 * @var string|null Public notes (for PDF / exports)
+	 */
+	public $note_public;
+
+	/**
+	 * @var string|null Document generation template model
+	 */
+	public $model_pdf;
+
+	/**
+	 * @var string Relative path to last generated main document / uploaded PDF
+	 */
+	public $last_main_doc;
+
+	/**
+	 * @var string|null Mass import batch key
+	 */
+	public $import_key;
 
 	/**
 	 * @var int Creation date
@@ -132,12 +188,12 @@ class BankRecord extends CommonObject
 	public $date_creation;
 
 	/**
-	 * @var int Validation date
+	 * @var int|null Validation date
 	 */
 	public $date_valid;
 
 	/**
-	 * @var array<CommonObject|stdClass> Lines of statement
+	 * @var array<BankRecordLine|CommonObject|stdClass> Lines of statement
 	 */
 	public $lines = array();
 
@@ -148,8 +204,11 @@ class BankRecord extends CommonObject
 	 */
 	public function __construct(DoliDB $db)
 	{
+		global $conf;
+
 		$this->db = $db;
 		$this->status = self::STATUS_DRAFT;
+		$this->entity = (!empty($conf->entity) ? (int) $conf->entity : 1);
 	}
 
 	/**
@@ -161,18 +220,29 @@ class BankRecord extends CommonObject
 	 */
 	public function create(User $user, $notrigger = 0)
 	{
+		global $conf;
+
 		$error = 0;
 
 		$now = dol_now();
 		$this->date_creation = $now;
 		$this->fk_user_author = $user->id;
+		if (empty($this->entity)) {
+			$this->entity = (!empty($conf->entity) ? (int) $conf->entity : 1);
+		}
+
+		if (!empty($this->note) && empty($this->note_private)) {
+			$this->note_private = $this->note;
+		}
 
 		$this->db->begin();
 
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX.$this->table_element." (";
-		$sql .= "ref, fk_bank, dt_from, dt_to, opening_balance, closing_balance, total_debit, total_credit, nb_operations, status, fk_user_author, date_creation";
+		$sql .= "ref, entity, ref_ext, fk_bank, dt_from, dt_to, opening_balance, closing_balance, total_debit, total_credit, nb_operations, status, fk_user_author, note, note_private, note_public, model_pdf, last_main_doc, import_key, date_creation";
 		$sql .= ") VALUES (";
 		$sql .= "'".$this->db->escape($this->ref)."', ";
+		$sql .= ((int) $this->entity).", ";
+		$sql .= (!empty($this->ref_ext) ? "'".$this->db->escape($this->ref_ext)."'" : "NULL").", ";
 		$sql .= ((int) $this->fk_bank).", ";
 		$sql .= "'".$this->db->idate($this->dt_from)."', ";
 		$sql .= "'".$this->db->idate($this->dt_to)."', ";
@@ -183,6 +253,12 @@ class BankRecord extends CommonObject
 		$sql .= ($this->nb_operations !== null && $this->nb_operations !== '' ? ((int) $this->nb_operations) : "NULL").", ";
 		$sql .= ((int) $this->status).", ";
 		$sql .= ((int) $this->fk_user_author).", ";
+		$sql .= (!empty($this->note_private) ? "'".$this->db->escape($this->note_private)."'" : "NULL").", ";
+		$sql .= (!empty($this->note_private) ? "'".$this->db->escape($this->note_private)."'" : "NULL").", ";
+		$sql .= (!empty($this->note_public) ? "'".$this->db->escape($this->note_public)."'" : "NULL").", ";
+		$sql .= (!empty($this->model_pdf) ? "'".$this->db->escape($this->model_pdf)."'" : "NULL").", ";
+		$sql .= (!empty($this->last_main_doc) ? "'".$this->db->escape($this->last_main_doc)."'" : "NULL").", ";
+		$sql .= (!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "NULL").", ";
 		$sql .= "'".$this->db->idate($this->date_creation)."'";
 		$sql .= ")";
 
@@ -215,7 +291,7 @@ class BankRecord extends CommonObject
 	 */
 	public function fetch($id, $ref = null)
 	{
-		$sql = "SELECT rowid, ref, fk_bank, dt_from, dt_to, opening_balance, closing_balance, total_debit, total_credit, nb_operations, status, fk_user_author, fk_user_valid, note, date_creation, date_valid, tms";
+		$sql = "SELECT rowid, ref, entity, ref_ext, fk_bank, dt_from, dt_to, opening_balance, closing_balance, total_debit, total_credit, nb_operations, status, fk_user_author, fk_user_modif, fk_user_valid, note, note_private, note_public, model_pdf, last_main_doc, import_key, date_creation, date_valid, tms";
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element;
 		if ($id > 0) {
 			$sql .= " WHERE rowid = ".((int) $id);
@@ -234,6 +310,8 @@ class BankRecord extends CommonObject
 					$this->id = (int) $obj->rowid;
 					$this->rowid = (int) $obj->rowid;
 					$this->ref = $obj->ref;
+					$this->entity = isset($obj->entity) ? (int) $obj->entity : 1;
+					$this->ref_ext = isset($obj->ref_ext) ? $obj->ref_ext : null;
 					$this->fk_bank = (int) $obj->fk_bank;
 					$this->dt_from = $this->db->jdate($obj->dt_from);
 					$this->dt_to = $this->db->jdate($obj->dt_to);
@@ -244,10 +322,16 @@ class BankRecord extends CommonObject
 					$this->nb_operations = $obj->nb_operations !== null ? (int) $obj->nb_operations : null;
 					$this->status = (int) $obj->status;
 					$this->fk_user_author = (int) $obj->fk_user_author;
-					$this->fk_user_valid = (int) $obj->fk_user_valid;
-					$this->note = $obj->note;
+					$this->fk_user_modif = !empty($obj->fk_user_modif) ? (int) $obj->fk_user_modif : null;
+					$this->fk_user_valid = !empty($obj->fk_user_valid) ? (int) $obj->fk_user_valid : null;
+					$this->note_private = isset($obj->note_private) ? $obj->note_private : null;
+					$this->note_public = isset($obj->note_public) ? $obj->note_public : null;
+					$this->note = !empty($this->note_private) ? $this->note_private : $obj->note;
+					$this->model_pdf = isset($obj->model_pdf) ? $obj->model_pdf : null;
+					$this->last_main_doc = isset($obj->last_main_doc) ? $obj->last_main_doc : null;
+					$this->import_key = isset($obj->import_key) ? $obj->import_key : null;
 					$this->date_creation = $this->db->jdate($obj->date_creation);
-					$this->date_valid = $this->db->jdate($obj->date_valid);
+					$this->date_valid = !empty($obj->date_valid) ? $this->db->jdate($obj->date_valid) : null;
 
 					$this->db->free($resql);
 					return 1;
@@ -270,8 +354,15 @@ class BankRecord extends CommonObject
 	 */
 	public function update(User $user, $notrigger = 0)
 	{
+		$this->fk_user_modif = $user->id;
+
+		if (!empty($this->note) && empty($this->note_private)) {
+			$this->note_private = $this->note;
+		}
+
 		$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET ";
 		$sql .= "ref = '".$this->db->escape($this->ref)."', ";
+		$sql .= "ref_ext = ".(!empty($this->ref_ext) ? "'".$this->db->escape($this->ref_ext)."'" : "NULL").", ";
 		$sql .= "fk_bank = ".((int) $this->fk_bank).", ";
 		$sql .= "dt_from = '".$this->db->idate($this->dt_from)."', ";
 		$sql .= "dt_to = '".$this->db->idate($this->dt_to)."', ";
@@ -281,7 +372,13 @@ class BankRecord extends CommonObject
 		$sql .= "total_credit = ".($this->total_credit !== null && $this->total_credit !== '' ? price2num($this->total_credit) : "NULL").", ";
 		$sql .= "nb_operations = ".($this->nb_operations !== null && $this->nb_operations !== '' ? ((int) $this->nb_operations) : "NULL").", ";
 		$sql .= "status = ".((int) $this->status).", ";
-		$sql .= "note = ".(!empty($this->note) ? "'".$this->db->escape($this->note)."'" : "NULL")." ";
+		$sql .= "fk_user_modif = ".((int) $this->fk_user_modif).", ";
+		$sql .= "note = ".(!empty($this->note_private) ? "'".$this->db->escape($this->note_private)."'" : "NULL").", ";
+		$sql .= "note_private = ".(!empty($this->note_private) ? "'".$this->db->escape($this->note_private)."'" : "NULL").", ";
+		$sql .= "note_public = ".(!empty($this->note_public) ? "'".$this->db->escape($this->note_public)."'" : "NULL").", ";
+		$sql .= "model_pdf = ".(!empty($this->model_pdf) ? "'".$this->db->escape($this->model_pdf)."'" : "NULL").", ";
+		$sql .= "last_main_doc = ".(!empty($this->last_main_doc) ? "'".$this->db->escape($this->last_main_doc)."'" : "NULL").", ";
+		$sql .= "import_key = ".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "NULL")." ";
 		$sql .= "WHERE rowid = ".((int) $this->id);
 
 		dol_syslog(__METHOD__, LOG_DEBUG);
@@ -295,7 +392,7 @@ class BankRecord extends CommonObject
 	}
 
 	/**
-	 * Delete bank record and its links
+	 * Delete bank record and its lines
 	 *
 	 * @param  User $user      User that deletes
 	 * @param  int  $notrigger 0=launch triggers, 1=disable
@@ -305,7 +402,11 @@ class BankRecord extends CommonObject
 	{
 		$this->db->begin();
 
-		// Delete links first
+		// Delete native lines first
+		$sql = "DELETE FROM ".MAIN_DB_PREFIX."bank_record_det WHERE fk_bank_record = ".((int) $this->id);
+		$this->db->query($sql);
+
+		// Delete legacy links
 		$sql = "DELETE FROM ".MAIN_DB_PREFIX."bank_record_link WHERE fk_bank_record = ".((int) $this->id);
 		$this->db->query($sql);
 
@@ -322,7 +423,7 @@ class BankRecord extends CommonObject
 	}
 
 	/**
-	 * Link an imported line from llx_bank_import to this record
+	 * Link an imported line from llx_bank_import to this record (legacy compatibility)
 	 *
 	 * @param  int $import_id ID of llx_bank_import row
 	 * @return int            Return integer <0 if KO, >0 if OK
@@ -372,9 +473,9 @@ class BankRecord extends CommonObject
 	}
 
 	/**
-	 * Fetch lines linked to this statement
+	 * Fetch lines linked to this statement (from llx_bank_record_det or legacy llx_bank_import)
 	 *
-	 * @return array Array of lines
+	 * @return array<BankRecordLine|CommonObject|stdClass> Array of lines
 	 */
 	public function fetch_lines()
 	{
@@ -384,6 +485,51 @@ class BankRecord extends CommonObject
 			return $this->lines;
 		}
 
+		// 1. Try native llx_bank_record_det first
+		$sql = "SELECT d.* ";
+		$sql .= "FROM ".MAIN_DB_PREFIX."bank_record_det as d ";
+		$sql .= "WHERE d.fk_bank_record = ".((int) $this->id)." ";
+		$sql .= "ORDER BY d.bdate ASC, d.rowid ASC";
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			if ($this->db->num_rows($resql) > 0) {
+				while ($obj = $this->db->fetch_object($resql)) {
+					$line = new BankRecordLine($this->db);
+					$line->id = (int) $obj->rowid;
+					$line->rowid = (int) $obj->rowid;
+					$line->fk_bank_record = (int) $obj->fk_bank_record;
+					$line->bdate = $this->db->jdate($obj->bdate);
+					$line->vdate = $this->db->jdate($obj->vdate);
+					$line->amount = (float) $obj->amount;
+					$line->currency_code = $obj->currency_code;
+					$line->charges_amount = (float) $obj->charges_amount;
+					$line->end_to_end_id = $obj->end_to_end_id;
+					$line->acct_svcr_ref = $obj->acct_svcr_ref;
+					$line->mandate_id = $obj->mandate_id;
+					$line->check_number = $obj->check_number;
+					$line->counterparty_name = $obj->counterparty_name;
+					$line->counterparty_iban = $obj->counterparty_iban;
+					$line->counterparty_bic = $obj->counterparty_bic;
+					$line->label = $obj->label;
+					$line->remittance_unstructured = $obj->remittance_unstructured;
+					$line->remittance_structured = $obj->remittance_structured;
+					$line->bank_tx_code = $obj->bank_tx_code;
+					$line->proprietary_code = $obj->proprietary_code;
+					$line->fk_soc = !empty($obj->fk_soc) ? (int) $obj->fk_soc : null;
+					$line->fk_bank = !empty($obj->fk_bank) ? (int) $obj->fk_bank : null;
+					$line->status = (int) $obj->status;
+					$line->datas = $obj->datas;
+					$line->import_key = $obj->import_key;
+					$this->lines[] = $line;
+				}
+				$this->db->free($resql);
+				return $this->lines;
+			}
+			$this->db->free($resql);
+		}
+
+		// 2. Fallback to legacy llx_bank_import via link table
 		$sql = "SELECT bi.* ";
 		$sql .= "FROM ".MAIN_DB_PREFIX."bank_import as bi ";
 		$sql .= "INNER JOIN ".MAIN_DB_PREFIX."bank_record_link as brl ON brl.fk_bank_import = bi.rowid ";
@@ -402,10 +548,10 @@ class BankRecord extends CommonObject
 	}
 
 	/**
-	 * Calculate dynamic stats on-the-fly from linked transactions.
-	 * Note: These values are NOT stored in the database table to respect banking & accounting normalization.
+	 * Calculate dynamic stats on-the-fly from statement transactions.
+	 * Checks llx_bank_record_det first, then falls back to llx_bank_import.
 	 *
-	 * @return array Array with calculated_debit, calculated_credit, nb_operations, calculated_end_balance, gap
+	 * @return array<string, float|int> Array with calculated_debit, calculated_credit, nb_operations, calculated_end_balance, gap
 	 */
 	public function getCalculatedStats()
 	{
@@ -421,6 +567,35 @@ class BankRecord extends CommonObject
 			return $stats;
 		}
 
+		// 1. Try native llx_bank_record_det first
+		$sql = "SELECT COUNT(rowid) as nb, ";
+		$sql .= "SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as debit, ";
+		$sql .= "SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as credit ";
+		$sql .= "FROM ".MAIN_DB_PREFIX."bank_record_det ";
+		$sql .= "WHERE fk_bank_record = ".((int) $this->id);
+
+		$resql = $this->db->query($sql);
+		if ($resql && ($obj = $this->db->fetch_object($resql)) && !empty($obj->nb)) {
+			$stats['nb_operations'] = (int) $obj->nb;
+			$stats['calculated_debit'] = (float) $obj->debit;
+			$stats['calculated_credit'] = (float) $obj->credit;
+			$stats['total_debit'] = (float) $obj->debit;
+			$stats['total_credit'] = (float) $obj->credit;
+
+			if ($this->opening_balance !== null) {
+				$stats['calculated_end_balance'] = (float) ($this->opening_balance + $stats['calculated_credit'] - $stats['calculated_debit']);
+				if ($this->closing_balance !== null) {
+					$stats['gap'] = (float) round($this->closing_balance - $stats['calculated_end_balance'], 2);
+				}
+			}
+			$this->db->free($resql);
+			return $stats;
+		}
+		if ($resql) {
+			$this->db->free($resql);
+		}
+
+		// 2. Fallback to legacy llx_bank_import
 		$sql = "SELECT COUNT(bi.rowid) as nb, SUM(ABS(bi.amount_debit)) as debit, SUM(ABS(bi.amount_credit)) as credit ";
 		$sql .= "FROM ".MAIN_DB_PREFIX."bank_import as bi ";
 		$sql .= "INNER JOIN ".MAIN_DB_PREFIX."bank_record_link as brl ON brl.fk_bank_import = bi.rowid ";
