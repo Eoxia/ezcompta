@@ -173,7 +173,7 @@ class BankRecord extends CommonObject
 	public $model_pdf;
 
 	/**
-	 * @var string|null Relative path to last generated main document / uploaded PDF
+	 * @var string Relative path to last generated main document / uploaded PDF
 	 */
 	public $last_main_doc;
 
