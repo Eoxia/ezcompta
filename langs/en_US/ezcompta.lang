@@ -70,3 +70,30 @@ EzComptaPendingTransferCount=%d record(s) downloaded by banking4dolibarr are wai
 EzComptaPendingTransferPeriod=They go from %s to %s.
 EzComptaPendingTransferNone=Every record downloaded by banking4dolibarr has already been transferred.
 EzComptaNoFirstLevelAccount=The chart of accounts "%s" holds no single digit account (1 to 9): the tree view has no group to show. Add the root accounts to the chart of accounts to use this page.
+
+# Bank statements & operations
+BankStatement=Bank statement
+BankStatements=Bank statements
+BankStatementNumberingModules=Bank statement numbering models
+BankStatementModelBankalchimiste=Bankalchimiste
+BankStatementModelBankalchimisteDesc=Transforms a custom mask into a bank statement number.
+BankStatementModelBankanarchie=Bankanarchie
+BankStatementModelBankanarchieDesc=No rules, no constraints, total freedom.
+BankStatementModelBankomatik=Bankomatik
+BankStatementModelBankomatikDesc=Automatic, chronological and sequential numbering.
+ConfirmValidateBankStatement=Are you sure you want to validate this bank statement?
+ConfirmReopenBankStatement=Are you sure you want to reopen this bank statement to draft?
+DeleteBankStatement=Delete bank statement
+BankStatementLines=Statement operations
+LineId=Line ID
+AddBankRecordLine=Add an operation
+IsoRef=ISO Ref / EndToEndId
+Counterparty=Counterparty
+OfficialStatement=Official PDF statement
+CalculatedFromLines=Calculated from lines
+BalanceGap=Balance gap
+WarningLinesCountMustMatchNbOperations=Warning: To validate, the number of lines must match the declared number of operations on the statement (%s lines for %s operations).
+ErrorLinesCountMismatchWithNbOperations=Cannot validate bank statement: The number of lines (%s) does not match the declared number of operations (%s).
+EZCOMPTA_BANKSTATEMENT_ALLOW_MANUAL_LINES=Allow manual addition and deletion of statement lines
+EZCOMPTA_BANKSTATEMENT_ALLOW_MANUAL_LINESTooltip=By default (No), the statement contains exactly the number of operations defined on the certified statement. If enabled (Yes), you can manually add or delete lines on draft statements.
+

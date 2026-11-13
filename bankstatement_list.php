@@ -19,8 +19,7 @@
 /**
  * \file        bankstatement_list.php
  * \ingroup     ezcompta
- * \brief       Annual 12-month dashboard for official bank statements (BankRecord)
- *              Takes into account the company fiscal year start (SOCIETE_FISCAL_MONTH_START).
+ * \brief       Standard Dolibarr list page for Bank Statements (BankRecord)
  */
 
 // Load Dolibarr environment
@@ -68,8 +67,8 @@ if (!$res) {
 global $conf, $db, $hookmanager, $langs, $user;
 
 require_once DOL_DOCUMENT_ROOT.'/core/lib/bank.lib.php';
-require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 dol_include_once('/ezcompta/class/bankrecord.class.php');
@@ -84,304 +83,47 @@ $langs->loadLangs(array("banks", "bills", "compta", "ezcompta@ezcompta", "other"
 
 $action = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm', 'alpha');
-$account_id = GETPOSTINT('account_id');
-$year = GETPOSTINT('year');
 
-$fiscal_month_start = getDolGlobalInt('SOCIETE_FISCAL_MONTH_START', 1);
+$search_ref = GETPOST('search_ref', 'alpha');
+$search_account = GETPOSTINT('search_account');
+$search_status = GETPOST('search_status', 'alpha');
+$search_date_start = GETPOSTDATE('search_date_start', '', 'tzuserrel');
+$search_date_end = GETPOSTDATE('search_date_end', '', 'tzuserrel');
+$search_remove_btn = GETPOST('button_removefilter', 'alpha');
 
-$now = dol_now();
-$now_month = (int) dol_print_date($now, '%m');
-$now_year = (int) dol_print_date($now, '%Y');
-$current_fiscal_year = ($fiscal_month_start > 1 && $now_month >= $fiscal_month_start) ? ($now_year + 1) : $now_year;
-if (empty($year)) {
-	$year = $current_fiscal_year;
+if (!empty($search_remove_btn)) {
+	$search_ref = '';
+	$search_account = 0;
+	$search_status = '';
+	$search_date_start = null;
+	$search_date_end = null;
 }
 
-// Find default bank account if not specified
-if (empty($account_id)) {
-	$sql_ba = "SELECT rowid FROM ".MAIN_DB_PREFIX."bank_account WHERE entity IN (".getEntity('bank_account').") AND clos = 0 ORDER BY rowid ASC LIMIT 1";
-	$res_ba = $db->query($sql_ba);
-	if ($res_ba && ($obj_ba = $db->fetch_object($res_ba))) {
-		$account_id = (int) $obj_ba->rowid;
-	}
+$limit = GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
+$page = GETPOSTINT('page');
+if (empty($page) || $page == -1) {
+	$page = 0;
+}
+$offset = $limit * $page;
+if (empty($sortfield)) {
+	$sortfield = 't.dt_from';
+}
+if (empty($sortorder)) {
+	$sortorder = 'DESC';
 }
 
-$bank_account = new Account($db);
-if ($account_id > 0) {
-	$bank_account->fetch($account_id);
-}
-
-// Generate the 12 periods of the fiscal year
-$fiscal_periods = array();
-for ($i = 0; $i < 12; $i++) {
-	$cal_month = ($fiscal_month_start + $i - 1) % 12 + 1;
-	$cal_year = ($fiscal_month_start > 1 && $cal_month >= $fiscal_month_start) ? ($year - 1) : $year;
-	$dt_start = dol_stringtotime(sprintf('%04d-%02d-01', $cal_year, $cal_month));
-	$dt_end = dol_stringtotime(date('Y-m-t 23:59:59', $dt_start));
-	$key = sprintf('%04d-%02d', $cal_year, $cal_month);
-	$month_name = dol_ucfirst($langs->trans("Month".sprintf('%02d', $cal_month))).' '.$cal_year;
-
-	$fiscal_periods[] = array(
-		'seq' => $i + 1,
-		'key' => $key,
-		'cal_month' => $cal_month,
-		'cal_year' => $cal_year,
-		'dt_start' => $dt_start,
-		'dt_end' => $dt_end,
-		'month_name' => $month_name,
-	);
-}
-
-$first_dt = $fiscal_periods[0]['dt_start'];
-$last_dt = $fiscal_periods[11]['dt_end'];
+$can_delete = ($user->hasRight('banque', 'supprimer') || $user->hasRight('banque', 'delete'));
+$can_edit = ($user->hasRight('banque', 'modifier') || $user->hasRight('banque', 'write'));
 
 
 /*
  * Actions
  */
 
-// Action: Import all PDFs from documents/banque-temporaire
-if ($action == 'import_temp_folder' && $account_id > 0 && ($user->hasRight('banque', 'modifier') || $user->hasRight('banque', 'write'))) {
-	$temp_dir = DOL_DATA_ROOT.'/banque-temporaire';
-	if (!is_dir($temp_dir)) {
-		$temp_dir = DOL_DOCUMENT_ROOT.'/../documents/banque-temporaire';
-	}
-
-	$script_path = DOL_DOCUMENT_ROOT.'/custom/ezcompta/scripts/parse_pdf.py';
-	$count_imported = 0;
-	$count_updated = 0;
-	$errors = array();
-
-	if (is_dir($temp_dir) && file_exists($script_path)) {
-		$files = glob($temp_dir.'/*.pdf');
-		if (!empty($files)) {
-			foreach ($files as $file_path) {
-				$cmd = 'python '.escapeshellarg($script_path).' '.escapeshellarg($file_path);
-				$output = shell_exec($cmd);
-				$data = json_decode($output, true);
-
-				if (!empty($data) && empty($data['error'])) {
-					$ref = !empty($data['ref']) ? $data['ref'] : 'IMP-'.date('YmdHis');
-					$dt_start_str = !empty($data['dt_start']) ? $data['dt_start'] : '';
-					$dt_end_str = !empty($data['dt_end']) ? $data['dt_end'] : '';
-
-					if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dt_start_str, $m_d)) {
-						$dt_start = dol_stringtotime($m_d[3].'-'.$m_d[2].'-'.$m_d[1]);
-					} else {
-						$dt_start = dol_stringtotime($dt_start_str);
-					}
-					if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dt_end_str, $m_d)) {
-						$dt_end = dol_stringtotime($m_d[3].'-'.$m_d[2].'-'.$m_d[1]);
-					} else {
-						$dt_end = dol_stringtotime($dt_end_str);
-					}
-
-					if (!empty($dt_end)) {
-						if (empty($dt_start)) {
-							$dt_start = $dt_end - (30 * 86400);
-						}
-
-						// Check if statement already exists for this bank and ref or exact end date
-						$check_sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."bank_record WHERE fk_bank = ".((int) $account_id);
-						$check_sql .= " AND dt_to = '".$db->idate($dt_end)."'";
-						$res_check = $db->query($check_sql);
-
-						$record = new BankRecord($db);
-						if ($res_check && $db->num_rows($res_check) > 0) {
-							$obj_ck = $db->fetch_object($res_check);
-							$record->fetch($obj_ck->rowid);
-							$record->ref = $ref;
-							$record->dt_from = $dt_start;
-							$record->dt_to = $dt_end;
-							$record->opening_balance = isset($data['opening_balance']) ? (float) $data['opening_balance'] : null;
-							$record->closing_balance = isset($data['closing_balance']) ? (float) $data['closing_balance'] : null;
-							$record->total_debit = isset($data['total_debit']) ? (float) $data['total_debit'] : null;
-							$record->total_credit = isset($data['total_credit']) ? (float) $data['total_credit'] : null;
-							$record->nb_operations = isset($data['nb_operations']) ? (int) $data['nb_operations'] : null;
-							$record->update($user);
-							$count_updated++;
-						} else {
-							$record->ref = $ref;
-							$record->fk_bank = $account_id;
-							$record->dt_from = $dt_start;
-							$record->dt_to = $dt_end;
-							$record->opening_balance = isset($data['opening_balance']) ? (float) $data['opening_balance'] : null;
-							$record->closing_balance = isset($data['closing_balance']) ? (float) $data['closing_balance'] : null;
-							$record->total_debit = isset($data['total_debit']) ? (float) $data['total_debit'] : null;
-							$record->total_credit = isset($data['total_credit']) ? (float) $data['total_credit'] : null;
-							$record->nb_operations = isset($data['nb_operations']) ? (int) $data['nb_operations'] : null;
-							$record->status = BankRecord::STATUS_DRAFT;
-							$record_id = $record->create($user);
-							if ($record_id > 0) {
-								$count_imported++;
-							}
-						}
-
-						if ($record->id > 0) {
-							$record->auto_link_lines();
-
-							$target_dir = $conf->bank->dir_output.'/'.$account_id.'/statement/'.dol_sanitizeFileName($record->ref);
-							if (!is_dir($target_dir)) {
-								dol_mkdir($target_dir);
-							}
-							$target_file = $target_dir.'/'.dol_basename($file_path);
-							if (!file_exists($target_file)) {
-								dol_copy($file_path, $target_file);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	setEventMessages($langs->trans("ImportFinished")." : ".$count_imported." relevés créés, ".$count_updated." mis à jour.", null, 'mesgs');
-	header("Location: ".$_SERVER["PHP_SELF"]."?account_id=".$account_id."&year=".$year);
-	exit;
-}
-
-// Action: Manual creation or edition of a statement
-if ($action == 'save_statement' && ($user->hasRight('banque', 'modifier') || $user->hasRight('banque', 'write'))) {
-	$record_id = GETPOSTINT('record_id');
-	$ref = GETPOST('ref', 'alphanohtml');
-	$dt_from = GETPOSTDATE('dt_from');
-	$dt_to = GETPOSTDATE('dt_to');
-	$opening_balance = price2num(GETPOST('opening_balance', 'alpha'));
-	$closing_balance = price2num(GETPOST('closing_balance', 'alpha'));
-	$total_debit = price2num(GETPOST('total_debit', 'alpha'));
-	$total_credit = price2num(GETPOST('total_credit', 'alpha'));
-	$nb_operations = GETPOSTINT('nb_operations');
-
-	$record = new BankRecord($db);
-	if ($record_id > 0) {
-		$record->fetch($record_id);
-	} else {
-		$record->fk_bank = $account_id;
-	}
-
-	$record->ref = $ref;
-	$record->dt_from = $dt_from;
-	$record->dt_to = $dt_to;
-	$record->opening_balance = $opening_balance !== '' ? (float) $opening_balance : null;
-	$record->closing_balance = $closing_balance !== '' ? (float) $closing_balance : null;
-	$record->total_debit = $total_debit !== '' ? (float) $total_debit : null;
-	$record->total_credit = $total_credit !== '' ? (float) $total_credit : null;
-	$record->nb_operations = $nb_operations > 0 ? (int) $nb_operations : null;
-
-	if ($record_id > 0) {
-		$res = $record->update($user);
-	} else {
-		$res = $record->create($user);
-	}
-
-	if ($res > 0) {
-		$record->auto_link_lines();
-
-		if (!empty($_FILES['statement_pdf']['name']) && !empty($_FILES['statement_pdf']['tmp_name'])) {
-			$target_dir = $conf->bank->dir_output.'/'.$account_id.'/statement/'.dol_sanitizeFileName($record->ref);
-			if (!is_dir($target_dir)) {
-				dol_mkdir($target_dir);
-			}
-			$clean_name = dol_sanitizeFileName($_FILES['statement_pdf']['name']);
-			dol_move_uploaded_file($_FILES['statement_pdf']['tmp_name'], $target_dir.'/'.$clean_name, 1);
-		}
-
-		setEventMessages($langs->trans("RecordSaved"), null, 'mesgs');
-	} else {
-		setEventMessages($record->error, $record->errors, 'errors');
-	}
-
-	header("Location: ".$_SERVER["PHP_SELF"]."?account_id=".$account_id."&year=".$year);
-	exit;
-}
-
-// Action: Quick PDF upload on a specific month row
-if ($action == 'upload_pdf_month' && ($user->hasRight('banque', 'modifier') || $user->hasRight('banque', 'write'))) {
-	if (!empty($_FILES['statement_pdf']['tmp_name'])) {
-		$tmp_file = $_FILES['statement_pdf']['tmp_name'];
-		$script_path = DOL_DOCUMENT_ROOT.'/custom/ezcompta/scripts/parse_pdf.py';
-		$cmd = 'python '.escapeshellarg($script_path).' '.escapeshellarg($tmp_file);
-		$output = shell_exec($cmd);
-		$data = json_decode($output, true);
-
-		$record = new BankRecord($db);
-		$record_id = GETPOSTINT('record_id');
-		if ($record_id > 0) {
-			$record->fetch($record_id);
-		} else {
-			$record->fk_bank = $account_id;
-		}
-
-		if (!empty($data) && empty($data['error'])) {
-			if (!empty($data['ref'])) {
-				$record->ref = $data['ref'];
-			}
-			if (!empty($data['dt_start'])) {
-				if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $data['dt_start'], $m_d)) {
-					$record->dt_from = dol_stringtotime($m_d[3].'-'.$m_d[2].'-'.$m_d[1]);
-				}
-			}
-			if (!empty($data['dt_end'])) {
-				if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $data['dt_end'], $m_d)) {
-					$record->dt_to = dol_stringtotime($m_d[3].'-'.$m_d[2].'-'.$m_d[1]);
-				}
-			}
-			if (isset($data['opening_balance'])) {
-				$record->opening_balance = (float) $data['opening_balance'];
-			}
-			if (isset($data['closing_balance'])) {
-				$record->closing_balance = (float) $data['closing_balance'];
-			}
-			if (isset($data['total_debit'])) {
-				$record->total_debit = (float) $data['total_debit'];
-			}
-			if (isset($data['total_credit'])) {
-				$record->total_credit = (float) $data['total_credit'];
-			}
-			if (isset($data['nb_operations'])) {
-				$record->nb_operations = (int) $data['nb_operations'];
-			}
-		}
-
-		if (empty($record->ref)) {
-			$cal_m = GETPOSTINT('cal_month');
-			$cal_y = GETPOSTINT('cal_year');
-			$record->ref = sprintf('%04d-%02d', $cal_y, $cal_m);
-		}
-		if (empty($record->dt_from)) {
-			$cal_m = GETPOSTINT('cal_month');
-			$cal_y = GETPOSTINT('cal_year');
-			$record->dt_from = dol_stringtotime(sprintf('%04d-%02d-01', $cal_y, $cal_m));
-			$record->dt_to = dol_stringtotime(date('Y-m-t', $record->dt_from));
-		}
-
-		if ($record->id > 0) {
-			$res = $record->update($user);
-		} else {
-			$res = $record->create($user);
-		}
-
-		if ($res > 0) {
-			$record->auto_link_lines();
-
-			$target_dir = $conf->bank->dir_output.'/'.$account_id.'/statement/'.dol_sanitizeFileName($record->ref);
-			if (!is_dir($target_dir)) {
-				dol_mkdir($target_dir);
-			}
-			$clean_name = dol_sanitizeFileName($_FILES['statement_pdf']['name']);
-			dol_move_uploaded_file($tmp_file, $target_dir.'/'.$clean_name, 1);
-
-			setEventMessages($langs->trans("RecordSaved")." (Relevé ".$record->ref.")", null, 'mesgs');
-		} else {
-			setEventMessages($record->error, $record->errors, 'errors');
-		}
-	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?account_id=".$account_id."&year=".$year);
-	exit;
-}
-
 // Action: Delete statement
-if ($action == 'delete_statement' && ($user->hasRight('banque', 'supprimer') || $user->hasRight('banque', 'delete'))) {
+if ($action == 'delete' && $confirm == 'yes' && $can_delete) {
 	$record_id = GETPOSTINT('record_id');
 	if ($record_id > 0) {
 		$record = new BankRecord($db);
@@ -390,7 +132,7 @@ if ($action == 'delete_statement' && ($user->hasRight('banque', 'supprimer') || 
 			setEventMessages($langs->trans("RecordDeleted"), null, 'mesgs');
 		}
 	}
-	header("Location: ".$_SERVER["PHP_SELF"]."?account_id=".$account_id."&year=".$year);
+	header("Location: ".$_SERVER["PHP_SELF"]."?page=".$page);
 	exit;
 }
 
@@ -402,425 +144,351 @@ if ($action == 'delete_statement' && ($user->hasRight('banque', 'supprimer') || 
 $form = new Form($db);
 $formfile = new FormFile($db);
 
-$fiscal_title = ($fiscal_month_start > 1) ? "Exercice fiscal ".$year." (".dol_print_date($first_dt, 'day')." au ".dol_print_date($last_dt, 'day').")" : "Année ".$year;
-$title = $langs->trans("BankStatements")." - ".$fiscal_title;
-llxHeader('', $title, '', '', 0, 0, '', '', '', 'mod-ezcompta page-bankstatement');
+$sql_where = " WHERE t.entity IN (".getEntity('bank_record').")";
+if (!empty($search_ref)) {
+	$sql_where .= natural_search('t.ref', $search_ref);
+}
+if ($search_account > 0) {
+	$sql_where .= " AND t.fk_bank = ".((int) $search_account);
+}
+if ($search_status != '' && $search_status != '-1') {
+	$sql_where .= " AND t.status = ".((int) $search_status);
+}
+if (!empty($search_date_start)) {
+	$sql_where .= " AND t.dt_from >= '".$db->idate($search_date_start)." 00:00:00'";
+}
+if (!empty($search_date_end)) {
+	$sql_where .= " AND t.dt_to <= '".$db->idate($search_date_end)." 23:59:59'";
+}
 
-print load_fiche_titre($langs->trans("BankStatements").' &mdash; '.$fiscal_title, '', 'fa-file-invoice-dollar');
+// Count total
+$sql_count = "SELECT COUNT(t.rowid) as total FROM ".MAIN_DB_PREFIX."bank_record as t";
+$sql_count .= " LEFT JOIN ".MAIN_DB_PREFIX."bank_account as ba ON ba.rowid = t.fk_bank";
+$sql_count .= $sql_where;
+$res_count = $db->query($sql_count);
+$nbtotalofrecords = 0;
+if ($res_count && ($obj_cnt = $db->fetch_object($res_count))) {
+	$nbtotalofrecords = (int) $obj_cnt->total;
+}
 
-// Navigation & Filters Form
-print '<form method="GET" action="'.$_SERVER["PHP_SELF"].'" class="marginbottomonly">';
-print '<div class="inline-block paddingright">';
-print '<span class="opacitymedium">'.$langs->trans("BankAccount").' : </span>';
+// Select query
+$sql = "SELECT t.rowid, t.ref, t.entity, t.ref_ext, t.fk_bank, t.dt_from, t.dt_to, t.opening_balance, t.closing_balance, ";
+$sql .= "t.total_debit, t.total_credit, t.nb_operations, t.status, t.date_creation, ";
+$sql .= "ba.ref as account_ref, ba.label as account_label ";
+$sql .= "FROM ".MAIN_DB_PREFIX."bank_record as t ";
+$sql .= "LEFT JOIN ".MAIN_DB_PREFIX."bank_account as ba ON ba.rowid = t.fk_bank ";
+$sql .= $sql_where;
+$sql .= $db->order($sortfield, $sortorder);
+$sql .= $db->plimit($limit + 1, $offset);
 
-// Bank account selector
+$resql = $db->query($sql);
+if (!$resql) {
+	dol_print_error($db);
+	exit;
+}
+
+$num = $db->num_rows($resql);
+
+$title = $langs->trans("BankStatements");
+llxHeader('', $title, '', '', 0, 0, '', '', '', 'mod-ezcompta page-bankstatement-list');
+
+$param = '';
+if (!empty($search_ref)) {
+	$param .= '&search_ref='.urlencode($search_ref);
+}
+if ($search_account > 0) {
+	$param .= '&search_account='.urlencode((string) $search_account);
+}
+if ($search_status != '' && $search_status != '-1') {
+	$param .= '&search_status='.urlencode($search_status);
+}
+if (!empty($search_date_start)) {
+	$param .= '&search_date_start='.urlencode(dol_print_date($search_date_start, 'day'));
+}
+if (!empty($search_date_end)) {
+	$param .= '&search_date_end='.urlencode(dol_print_date($search_date_end, 'day'));
+}
+
+print '<form method="POST" id="searchFormList" action="'.$_SERVER["PHP_SELF"].'">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="formfilteraction" id="formfilteraction" value="list">';
+print '<input type="hidden" name="action" value="list">';
+print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
+print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
+print '<input type="hidden" name="page" value="'.$page.'">';
+print '<input type="hidden" name="limit" value="'.$limit.'">';
+
+// Top Right Buttons
+$newcardbutton = '';
+$newcardbutton .= '<a class="btnTitle" href="'.dol_buildpath('/ezcompta/bankstatement_dashboard.php', 1).'" title="'.$langs->trans("Dashboard").'">';
+$newcardbutton .= '<span class="fas fa-th-large paddingright"></span>'.$langs->trans("Dashboard");
+$newcardbutton .= '</a> ';
+if ($can_edit) {
+	$newcardbutton .= '<a class="btnTitle" href="'.dol_buildpath('/ezcompta/bankstatement_card.php', 1).'?action=create" title="'.$langs->trans("NewBankStatement").'">';
+	$newcardbutton .= '<span class="fas fa-plus-circle paddingright"></span>'.$langs->trans("NewBankStatement");
+	$newcardbutton .= '</a>';
+}
+
+print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, '', $num, $nbtotalofrecords, 'fa-file-invoice-dollar', 0, $newcardbutton, '', $limit, 0, 0, 1);
+
+print '<div class="div-table-responsive">';
+print '<table class="tagtable liste">'."\n";
+
+// Table Header
+print '<tr class="liste_titre">';
+print_liste_field_titre($langs->trans("Ref"), $_SERVER["PHP_SELF"], 't.ref', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("BankAccount"), $_SERVER["PHP_SELF"], 'ba.label', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("DateStart"), $_SERVER["PHP_SELF"], 't.dt_from', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("DateEnd"), $_SERVER["PHP_SELF"], 't.dt_to', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("InitialBalance"), $_SERVER["PHP_SELF"], 't.opening_balance', '', $param, 'class="right"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("EndingBalance"), $_SERVER["PHP_SELF"], 't.closing_balance', '', $param, 'class="right"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("Debit"), $_SERVER["PHP_SELF"], 't.total_debit', '', $param, 'class="right"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("Credit"), $_SERVER["PHP_SELF"], 't.total_credit', '', $param, 'class="right"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("NbOfOperations"), $_SERVER["PHP_SELF"], 't.nb_operations', '', $param, 'class="center"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("BalanceGap"), $_SERVER["PHP_SELF"], '', '', $param, 'class="center"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("CertifiedPDF"), $_SERVER["PHP_SELF"], '', '', $param, 'class="center"', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans("Status"), $_SERVER["PHP_SELF"], 't.status', '', $param, 'class="center"', $sortfield, $sortorder);
+print_liste_field_titre('', $_SERVER["PHP_SELF"], '', '', $param, 'class="center width80"', $sortfield, $sortorder, 'maxwidthsearch');
+print '</tr>'."\n";
+
+// Filter Row
+print '<tr class="liste_titre_filter">';
+// Ref
+print '<td class="liste_titre"><input type="text" class="flat maxwidth100" name="search_ref" value="'.dol_escape_htmltag($search_ref).'"></td>';
+// Account
+print '<td class="liste_titre">';
+print '<select name="search_account" class="flat maxwidth150">';
+print '<option value="0">&nbsp;</option>';
 $sql_accounts = "SELECT rowid, ref, label FROM ".MAIN_DB_PREFIX."bank_account WHERE entity IN (".getEntity('bank_account').") AND clos = 0 ORDER BY label ASC";
 $res_accounts = $db->query($sql_accounts);
-print '<select name="account_id" class="flat" onchange="this.form.submit();">';
 if ($res_accounts) {
 	while ($acc = $db->fetch_object($res_accounts)) {
-		print '<option value="'.$acc->rowid.'"'.($acc->rowid == $account_id ? ' selected' : '').'>'.dol_escape_htmltag($acc->label.' ('.$acc->ref.')').'</option>';
+		print '<option value="'.$acc->rowid.'"'.($acc->rowid == $search_account ? ' selected' : '').'>'.dol_escape_htmltag($acc->label.' ('.$acc->ref.')').'</option>';
 	}
 }
 print '</select>';
-print '</div>';
-
-// Fiscal Year selector
-print '<div class="inline-block paddingright">';
-print '<span class="opacitymedium">'.$langs->trans("FiscalYear").' : </span>';
-print '<select name="year" class="flat" onchange="this.form.submit();">';
-for ($y = $current_fiscal_year + 1; $y >= 2022; $y--) {
-	if ($fiscal_month_start > 1) {
-		$f_start = dol_stringtotime(sprintf('%04d-%02d-01', $y - 1, $fiscal_month_start));
-		$end_month = ($fiscal_month_start == 1) ? 12 : ($fiscal_month_start - 1);
-		$f_end = dol_stringtotime(date('Y-m-t', dol_stringtotime(sprintf('%04d-%02d-01', $y, $end_month))));
-		$label_y = 'Exercice '.$y.' ('.dol_print_date($f_start, 'day').' au '.dol_print_date($f_end, 'day').')';
-	} else {
-		$label_y = 'Année '.$y;
-	}
-	print '<option value="'.$y.'"'.($y == $year ? ' selected' : '').'>'.$label_y.'</option>';
-}
+print '</td>';
+// Date start
+print '<td class="liste_titre">'.$form->selectDate($search_date_start, 'search_date_start', 0, 0, 1, '', 1, 0).'</td>';
+// Date end
+print '<td class="liste_titre">'.$form->selectDate($search_date_end, 'search_date_end', 0, 0, 1, '', 1, 0).'</td>';
+// Initial balance
+print '<td class="liste_titre"></td>';
+// Ending balance
+print '<td class="liste_titre"></td>';
+// Debit
+print '<td class="liste_titre"></td>';
+// Credit
+print '<td class="liste_titre"></td>';
+// Nb operations
+print '<td class="liste_titre"></td>';
+// Gap
+print '<td class="liste_titre"></td>';
+// PDF
+print '<td class="liste_titre"></td>';
+// Status
+print '<td class="liste_titre center">';
+print '<select name="search_status" class="flat maxwidth100">';
+print '<option value="-1">&nbsp;</option>';
+print '<option value="0"'.($search_status === '0' ? ' selected' : '').'>'.$langs->trans("Draft").'</option>';
+print '<option value="1"'.($search_status === '1' ? ' selected' : '').'>'.$langs->trans("Validated").'</option>';
+print '<option value="9"'.($search_status === '9' ? ' selected' : '').'>'.$langs->trans("Canceled").'</option>';
 print '</select>';
-print '</div>';
+print '</td>';
+// Search action icons
+print '<td class="liste_titre center nowrap">';
+$searchpicto = $form->showFilterButtons();
+print $searchpicto;
+print '</td>';
+print '</tr>'."\n";
 
-print '<input type="submit" class="button button-small" value="'.$langs->trans("Search").'">';
+// Rows
+$i = 0;
+$total_opening = 0.0;
+$total_closing = 0.0;
+$total_debit = 0.0;
+$total_credit = 0.0;
+$total_ops = 0;
 
-// Action buttons on the right
-print '<div class="floatright inline-block">';
-if ($user->hasRight('banque', 'modifier') || $user->hasRight('banque', 'write')) {
-	print '<a href="'.$_SERVER["PHP_SELF"]."?action=import_temp_folder&account_id=".$account_id."&year=".$year."&token=".newToken().'" class="button button-small" onclick="return confirm(\'Voulez-vous importer et analyser automatiquement tous les PDF du dossier documents/banque-temporaire ?\');">';
-	print '<span class="fas fa-magic paddingright"></span> Importer les PDF temporaires';
-	print '</a> ';
+$record_static = new BankRecord($db);
+$account_static = new Account($db);
 
-	print '<button type="button" class="button button-small" onclick="document.getElementById(\'modal_add_statement\').style.display=\'block\';">';
-	print '<span class="fas fa-plus-circle paddingright"></span> '.$langs->trans("NewObject", $langs->transnoentitiesnoconv("BankStatement"));
-	print '</button>';
-}
-print '</div>';
-print '<div class="clearboth"></div>';
-print '</form>';
-
-
-// Load all BankRecords for this account and fiscal year
-$records_by_period = array();
-$sql_rec = "SELECT rowid FROM ".MAIN_DB_PREFIX."bank_record ";
-$sql_rec .= "WHERE fk_bank = ".((int) $account_id)." ";
-$sql_rec .= "AND dt_to >= '".$db->idate($first_dt)."' AND dt_to <= '".$db->idate($last_dt)."' ";
-$sql_rec .= "ORDER BY dt_to ASC";
-$res_rec = $db->query($sql_rec);
-if ($res_rec) {
-	while ($obj_r = $db->fetch_object($res_rec)) {
-		$r = new BankRecord($db);
-		if ($r->fetch($obj_r->rowid) > 0) {
-			$k = dol_print_date($r->dt_to, '%Y-%m');
-			$records_by_period[$k] = $r;
-		}
+while ($i < min($num, $limit)) {
+	$obj = $db->fetch_object($resql);
+	if (!$obj) {
+		break;
 	}
-}
 
-// Check transactions from llx_bank for justification pieces
-$justified_by_period = array();
-$sql_just = "SELECT DATE_FORMAT(b.datev, '%Y-%m') as ym, COUNT(DISTINCT b.rowid) as total_lines, ";
-$sql_just .= "COUNT(DISTINCT CASE WHEN bu.rowid IS NOT NULL THEN b.rowid END) as justified_lines ";
-$sql_just .= "FROM ".MAIN_DB_PREFIX."bank as b ";
-$sql_just .= "LEFT JOIN ".MAIN_DB_PREFIX."bank_url as bu ON bu.fk_bank = b.rowid ";
-$sql_just .= "WHERE b.fk_account = ".((int) $account_id)." ";
-$sql_just .= "AND b.datev >= '".$db->idate($first_dt)."' AND b.datev <= '".$db->idate($last_dt)."' ";
-$sql_just .= "GROUP BY ym";
-$res_just = $db->query($sql_just);
-if ($res_just) {
-	while ($obj_j = $db->fetch_object($res_just)) {
-		$justified_by_period[$obj_j->ym] = array(
-			'total' => (int) $obj_j->total_lines,
-			'justified' => (int) $obj_j->justified_lines,
-		);
-	}
-}
+	$record_static->id = (int) $obj->rowid;
+	$record_static->ref = $obj->ref;
+	$record_static->status = (int) $obj->status;
+	$record_static->dt_from = $db->jdate($obj->dt_from);
+	$record_static->dt_to = $db->jdate($obj->dt_to);
+	$record_static->opening_balance = ($obj->opening_balance !== null ? (float) $obj->opening_balance : null);
+	$record_static->closing_balance = ($obj->closing_balance !== null ? (float) $obj->closing_balance : null);
+	$record_static->total_debit = ($obj->total_debit !== null ? (float) $obj->total_debit : null);
+	$record_static->total_credit = ($obj->total_credit !== null ? (float) $obj->total_credit : null);
+	$record_static->nb_operations = ($obj->nb_operations !== null ? (int) $obj->nb_operations : null);
 
+	$stats = $record_static->getCalculatedStats();
 
-// The 12-Month Table ordered by fiscal year
-print '<div class="div-table-responsive-no-min marginbottomonly">';
-print '<table class="tagtable liste centpercent">';
-print '<tr class="liste_titre">';
-print '<th class="liste_titre width100">N° Relevé</th>';
-print '<th class="liste_titre">Période & Document PDF</th>';
-print '<th class="liste_titre right" style="min-width:140px;">Solde Initial</th>';
-print '<th class="liste_titre right" style="min-width:140px;">Solde Final</th>';
-print '<th class="liste_titre center width80">Écart</th>';
-print '<th class="liste_titre center width120">Opérations</th>';
-print '<th class="liste_titre center" style="min-width:160px;">Justification Pièces</th>';
-print '<th class="liste_titre center width90">Statut</th>';
-print '<th class="liste_titre center width100">Actions</th>';
-print '</tr>';
-
-$running_balance = null;
-if ($account_id > 0) {
-	$sql_prev = "SELECT closing_balance FROM ".MAIN_DB_PREFIX."bank_record WHERE fk_bank = ".((int) $account_id)." AND dt_to < '".$db->idate($first_dt)."' ORDER BY dt_to DESC LIMIT 1";
-	$res_prev = $db->query($sql_prev);
-	if ($res_prev && ($obj_prev = $db->fetch_object($res_prev))) {
-		$running_balance = (float) $obj_prev->closing_balance;
-	}
-}
-
-foreach ($fiscal_periods as $period) {
-	$k = $period['key'];
-	$has_record = isset($records_by_period[$k]);
-	$rec = $has_record ? $records_by_period[$k] : null;
-
-	$month_name = $period['month_name'];
-
-	$stats = $has_record ? $rec->getCalculatedStats() : array('nb_operations' => 0, 'calculated_debit' => 0, 'calculated_credit' => 0, 'calculated_end_balance' => 0, 'gap' => 0);
-
-	// Check if PDF file exists
-	$pdf_file_path = null;
+	// Locate PDF
 	$pdf_file_name = null;
-	if ($has_record) {
-		$dir_statement = $conf->bank->dir_output.'/'.$account_id.'/statement/'.dol_sanitizeFileName($rec->ref);
+	$pdf_file_path = null;
+	if (!empty($obj->last_main_doc) && file_exists($conf->bank->dir_output.'/'.$obj->last_main_doc)) {
+		$pdf_file_path = $conf->bank->dir_output.'/'.$obj->last_main_doc;
+		$pdf_file_name = basename($pdf_file_path);
+	} else {
+		$dir_statement = $conf->bank->dir_output.'/'.$obj->fk_bank.'/statement/'.$obj->rowid;
 		if (is_dir($dir_statement)) {
-			$date_str = dol_print_date($rec->dt_to, '%Y-%m');
-			$files = glob($dir_statement.'/*'.$date_str.'*.pdf');
-			if (empty($files)) {
-				$date_y = dol_print_date($rec->dt_to, '%Y');
-				$files = glob($dir_statement.'/*'.$date_y.'*.pdf');
-			}
-			if (empty($files)) {
-				$files = glob($dir_statement.'/*.pdf');
-			}
+			$files = glob($dir_statement.'/*.pdf');
 			if (!empty($files)) {
-				$pdf_file_path = $files[0];
 				$pdf_file_name = basename($files[0]);
+				$pdf_file_path = $files[0];
 			}
 		}
 	}
 
-	print '<tr class="oddeven" id="row_period_'.$k.'">';
+	print '<tr class="oddeven">';
 
-	// Column 1: Month / Statement Ref
-	print '<td>';
-	print '<b>'.$month_name.'</b><br>';
-	if ($has_record) {
-		print '<span class="badge badge-status4"><span class="fas fa-hashtag"></span> '.dol_escape_htmltag($rec->ref).'</span>';
+	// Ref
+	print '<td class="nowrap">';
+	print $record_static->getNomUrl(1);
+	print '</td>';
+
+	// Account
+	print '<td class="tdoverflowmax150" title="'.dol_escape_htmltag($obj->account_label.' ('.$obj->account_ref.')').'">';
+	if ($obj->fk_bank > 0) {
+		$account_static->id = (int) $obj->fk_bank;
+		$account_static->ref = $obj->account_ref;
+		$account_static->label = $obj->account_label;
+		print $account_static->getNomUrl(1);
 	} else {
-		print '<span class="opacitymedium">Non créé</span>';
+		print '<span class="opacitymedium">&mdash;</span>';
 	}
 	print '</td>';
 
-	// Column 2: Period & PDF Document
-	print '<td>';
-	if ($has_record) {
-		print '<span class="fas fa-calendar-alt opacitymedium paddingright"></span>';
-		print dol_print_date($rec->dt_from, 'day').' au '.dol_print_date($rec->dt_to, 'day').'<br>';
-		if ($pdf_file_name) {
-			$relativepath = $account_id.'/statement/'.dol_sanitizeFileName($rec->ref).'/'.$pdf_file_name;
-			$download_url = DOL_URL_ROOT.'/document.php?modulepart=bank&file='.urlencode($relativepath);
-			print '<a href="'.$download_url.'" target="_blank" class="badge badge-info" title="'.dol_escape_htmltag($pdf_file_name).'">';
-			print '<span class="fas fa-file-pdf paddingright"></span> '.dol_trunc($pdf_file_name, 25);
-			print '</a> ';
-			$fileinfo = array(
-				'name' => $pdf_file_name,
-				'fullname' => (string) $pdf_file_path,
-			);
-			$preview_html = $formfile->showPreview($fileinfo, 'bank', $relativepath, 0, 'preview=1');
-			if ($preview_html) {
-				print $preview_html;
-			} else {
-				$preview_url = DOL_URL_ROOT.'/document.php?modulepart=bank&attachment=0&file='.urlencode($relativepath);
-				print '<a class="pictopreview documentpreview" href="'.$preview_url.'" mime="application/pdf" target="_blank" title="'.$langs->trans("Preview").'">';
-				print img_picto($langs->trans("Preview"), 'search-plus', 'class="pictofixedwidth valignmiddle"');
-				print '</a>';
-			}
-		} else {
-			print '<span class="badge badge-warning opacitymedium">PDF manquant</span>';
-		}
-	} else {
-		print '<span class="opacitymedium">'.dol_print_date($period['dt_start'], 'day').' au '.dol_print_date($period['dt_end'], 'day').'</span>';
-	}
-	print '</td>';
+	// Date start
+	print '<td class="nowrap">'.dol_print_date($record_static->dt_from, 'day').'</td>';
 
-	// Column 3: Opening Balance (Ligne 1: Réel PDF / Ligne 2: Calculé)
+	// Date end
+	print '<td class="nowrap">'.dol_print_date($record_static->dt_to, 'day').'</td>';
+
+	// Initial balance
 	print '<td class="right nowrap">';
-	if ($has_record && $rec->opening_balance !== null) {
-		print '<div class="bold">'.price($rec->opening_balance).'</div>';
-		if ($running_balance !== null) {
-			$diff_start = round($rec->opening_balance - $running_balance, 2);
-			if ($diff_start != 0) {
-				print '<div class="badge badge-status8 font-small" title="Rupture avec le relevé précédent">Précédent : '.price($running_balance).'</div>';
-			} else {
-				print '<div class="opacitymedium font-small">(attendu: '.price($running_balance).')</div>';
-			}
-		}
+	if ($record_static->opening_balance !== null) {
+		print price($record_static->opening_balance);
+		$total_opening += $record_static->opening_balance;
 	} else {
 		print '<span class="opacitymedium">&mdash;</span>';
 	}
 	print '</td>';
 
-	// Column 4: Closing Balance (Ligne 1: Réel PDF / Ligne 2: Calculé)
-	print '<td class="right nowrap">';
-	if ($has_record && $rec->closing_balance !== null) {
-		print '<div class="bold">'.price($rec->closing_balance).'</div>';
-		print '<div class="opacitymedium font-small">(calculé: '.price($stats['calculated_end_balance']).')</div>';
-		$running_balance = $rec->closing_balance;
+	// Ending balance
+	print '<td class="right nowrap bold">';
+	if ($record_static->closing_balance !== null) {
+		print price($record_static->closing_balance);
+		$total_closing += $record_static->closing_balance;
 	} else {
 		print '<span class="opacitymedium">&mdash;</span>';
 	}
 	print '</td>';
 
-	// Column 5: Gap (Écart)
+	// Debit
+	$disp_deb = ($record_static->total_debit !== null) ? $record_static->total_debit : $stats['calculated_debit'];
+	print '<td class="right nowrap color-danger">';
+	if ($disp_deb > 0) {
+		print '- '.price($disp_deb);
+		$total_debit += $disp_deb;
+	} else {
+		print '<span class="opacitymedium">0,00</span>';
+	}
+	print '</td>';
+
+	// Credit
+	$disp_crd = ($record_static->total_credit !== null) ? $record_static->total_credit : $stats['calculated_credit'];
+	print '<td class="right nowrap color-success">';
+	if ($disp_crd > 0) {
+		print '+ '.price($disp_crd);
+		$total_credit += $disp_crd;
+	} else {
+		print '<span class="opacitymedium">0,00</span>';
+	}
+	print '</td>';
+
+	// Nb operations
+	$disp_ops = ($record_static->nb_operations !== null) ? $record_static->nb_operations : $stats['nb_operations'];
+	print '<td class="center nowrap">'.$disp_ops.'</td>';
+	$total_ops += $disp_ops;
+
+	// Gap
 	print '<td class="center nowrap">';
-	if ($has_record && $rec->closing_balance !== null) {
-		$gap = isset($stats['gap']) ? $stats['gap'] : 0;
-		if (abs($gap) < 0.001) {
-			print '<span class="badge badge-status4 font-small"><span class="fas fa-check paddingright"></span>0,00 €</span>';
-		} else {
-			print '<span class="badge badge-status8 font-small bold" title="Écart entre solde réel et opérations"><span class="fas fa-exclamation-triangle paddingright"></span>'.price($gap).'</span>';
-		}
+	$gap = isset($stats['gap']) ? $stats['gap'] : 0.0;
+	if (abs($gap) < 0.001) {
+		print '<span class="badge badge-status4 font-small"><span class="fas fa-check paddingright"></span>0,00 €</span>';
 	} else {
-		print '<span class="opacitymedium">&mdash;</span>';
+		print '<span class="badge badge-status8 font-small bold" title="'.$langs->trans("BalanceGap").'"><span class="fas fa-exclamation-triangle paddingright"></span>'.price($gap).'</span>';
 	}
 	print '</td>';
 
-	// Column 6: Operations Count & totals
-	print '<td class="center">';
-	if ($has_record) {
-		$pdf_ops = $rec->nb_operations;
-		$calc_ops = !empty($stats['nb_operations']) ? $stats['nb_operations'] : 0;
-		$calc_credit = isset($stats['calculated_credit']) ? $stats['calculated_credit'] : (isset($stats['total_credit']) ? $stats['total_credit'] : 0);
-		$calc_debit = isset($stats['calculated_debit']) ? $stats['calculated_debit'] : (isset($stats['total_debit']) ? $stats['total_debit'] : 0);
-
-		if ($pdf_ops !== null) {
-			print '<b title="Nombre d\'opérations certifié par le relevé bancaire">'.$pdf_ops.' op.</b>';
-			if ($calc_ops != $pdf_ops) {
-				print ' <span class="badge badge-warning font-small" title="Opérations intégrées : '.$calc_ops.'">('.$calc_ops.' intégrées)</span>';
-			}
-			print '<br>';
-		} else {
-			print '<b>'.$calc_ops.'</b> op.<br>';
-		}
-		print '<span class="font-small opacitymedium">+ '.price($calc_credit).' | - '.price($calc_debit).'</span>';
-	} else {
-		print '<span class="opacitymedium">0 op.</span>';
-	}
-	print '</td>';
-
-	// Column 7: Justification status (Pièces comptables)
-	print '<td class="center">';
-	$j_info = isset($justified_by_period[$k]) ? $justified_by_period[$k] : array('total' => 0, 'justified' => 0);
-	if ($j_info['total'] > 0) {
-		$pct = round(($j_info['justified'] / $j_info['total']) * 100);
-		$color_class = $pct == 100 ? 'badge-status4' : ($pct >= 70 ? 'badge-warning' : 'badge-status8');
-		print '<span class="badge '.$color_class.' font-small bold">'.$j_info['justified'].' / '.$j_info['total'].' ('.$pct.'%)</span>';
-		if ($j_info['justified'] < $j_info['total']) {
-			$unjust = $j_info['total'] - $j_info['justified'];
-			print '<br><span class="font-small color-danger">⚠️ '.$unjust.' sans pièce</span>';
-		}
-	} else {
-		print '<span class="opacitymedium">&mdash;</span>';
-	}
-	print '</td>';
-
-	// Column 8: Status
-	print '<td class="center">';
-	if ($has_record) {
-		print $rec->getLibStatut(3);
-	} else {
-		print '<span class="badge badge-status0">À venir</span>';
-	}
-	print '</td>';
-
-	// Column 9: Actions
+	// PDF
 	print '<td class="center nowrap">';
-	if ($has_record) {
-		// Edit button
-		$nb_ops_val = $rec->nb_operations !== null ? $rec->nb_operations : (isset($stats['nb_operations']) ? $stats['nb_operations'] : '');
-		$tot_debit_val = $rec->total_debit !== null ? price2num($rec->total_debit) : '';
-		$tot_credit_val = $rec->total_credit !== null ? price2num($rec->total_credit) : '';
-		print '<button type="button" class="button button-small" title="'.$langs->trans("Edit").'" onclick="openEditModal('.$rec->id.', \''.dol_escape_js($rec->ref).'\', \''.dol_print_date($rec->dt_from, 'day').'\', \''.dol_print_date($rec->dt_to, 'day').'\', \''.price2num($rec->opening_balance).'\', \''.price2num($rec->closing_balance).'\', \''.$nb_ops_val.'\', \''.$tot_debit_val.'\', \''.$tot_credit_val.'\');">';
-		print '<span class="fas fa-edit"></span>';
-		print '</button> ';
+	if ($pdf_file_name) {
+		$relativepath = !empty($obj->last_main_doc) ? $obj->last_main_doc : $obj->fk_bank.'/statement/'.$obj->rowid.'/'.$pdf_file_name;
+		$download_url = DOL_URL_ROOT.'/document.php?modulepart=bank&file='.urlencode($relativepath);
+		print '<a href="'.$download_url.'" target="_blank" class="badge badge-info" title="'.dol_escape_htmltag($pdf_file_name).'">';
+		print '<span class="fas fa-file-pdf paddingright"></span> '.dol_trunc($pdf_file_name, 18);
+		print '</a> ';
+		$fileinfo = array('name' => $pdf_file_name, 'fullname' => (string) $pdf_file_path);
+		$preview_html = $formfile->showPreview($fileinfo, 'bank', $relativepath, 0, 'preview=1');
+		if ($preview_html) {
+			print $preview_html;
+		}
+	} else {
+		print '<span class="opacitymedium">&mdash;</span>';
+	}
+	print '</td>';
 
-		// Delete button
-		print '<a href="'.$_SERVER["PHP_SELF"].'?action=delete_statement&record_id='.$rec->id.'&account_id='.$account_id.'&year='.$year.'&token='.newToken().'" class="button button-small" title="'.$langs->trans("Delete").'" onclick="return confirm(\'Voulez-vous supprimer ce relevé ?\');">';
-		print '<span class="fas fa-trash"></span>';
+	// Status
+	print '<td class="center nowrap">'.$record_static->getLibStatut(3).'</td>';
+
+	// Actions
+	print '<td class="center nowrap">';
+	print '<a href="'.dol_buildpath('/ezcompta/bankstatement_card.php', 1).'?id='.$obj->rowid.'" class="editfielda paddingright" title="'.$langs->trans("Card").'">';
+	print '<span class="fas fa-eye"></span>';
+	print '</a>';
+	if ($can_delete) {
+		print '<a href="'.$_SERVER["PHP_SELF"].'?action=delete&confirm=yes&record_id='.$obj->rowid.'&token='.newToken().'" class="deletefilelink" title="'.$langs->trans("Delete").'" onclick="return confirm(\'Voulez-vous supprimer ce relevé ?\');">';
+		print img_picto($langs->trans("Delete"), 'delete');
 		print '</a>';
-	} else {
-		// Quick upload PDF / Create for this period
-		print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" enctype="multipart/form-data" class="inline-block">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input type="hidden" name="action" value="upload_pdf_month">';
-		print '<input type="hidden" name="account_id" value="'.$account_id.'">';
-		print '<input type="hidden" name="year" value="'.$year.'">';
-		print '<input type="hidden" name="cal_month" value="'.$period['cal_month'].'">';
-		print '<input type="hidden" name="cal_year" value="'.$period['cal_year'].'">';
-		print '<label class="button button-small" style="cursor:pointer;" title="Déposer le PDF du mois">';
-		print '<span class="fas fa-file-upload paddingright"></span> PDF';
-		print '<input type="file" name="statement_pdf" accept=".pdf" style="display:none;" onchange="this.form.submit();">';
-		print '</label>';
-		print '</form>';
 	}
 	print '</td>';
 
-	print '</tr>';
+	print '</tr>'."\n";
+	$i++;
+}
+
+if ($num == 0) {
+	print '<tr><td colspan="13" class="opacitymedium center paddingtop paddingbottom">'.$langs->trans("NoRecordFound").'</td></tr>';
+}
+
+// Table Footer (Totals)
+if ($num > 0) {
+	print '<tr class="liste_total">';
+	print '<td colspan="4" class="liste_total bold">'.$langs->trans("Total").'</td>';
+	print '<td class="liste_total right bold nowrap">'.price($total_opening).'</td>';
+	print '<td class="liste_total right bold nowrap">'.price($total_closing).'</td>';
+	print '<td class="liste_total right bold color-danger nowrap">- '.price($total_debit).'</td>';
+	print '<td class="liste_total right bold color-success nowrap">+ '.price($total_credit).'</td>';
+	print '<td class="liste_total center bold nowrap">'.$total_ops.'</td>';
+	print '<td colspan="4" class="liste_total"></td>';
+	print '</tr>'."\n";
 }
 
 print '</table>';
 print '</div>';
 
+print '</form>';
 
-// Modal: Add / Edit Statement
-print '
-<div id="modal_add_statement" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
-	<div style="background:#fff; width:550px; margin:80px auto; padding:25px; border-radius:8px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-		<h3 id="modal_title" class="marginbottom"><span class="fas fa-file-invoice-dollar paddingright"></span> Nouveau Relevé Bancaire</h3>
-		<form method="POST" action="'.$_SERVER["PHP_SELF"].'" enctype="multipart/form-data">
-			<input type="hidden" name="token" value="'.newToken().'">
-			<input type="hidden" name="action" value="save_statement">
-			<input type="hidden" name="account_id" value="'.$account_id.'">
-			<input type="hidden" name="year" value="'.$year.'">
-			<input type="hidden" name="record_id" id="form_record_id" value="0">
-
-			<div class="marginbottom">
-				<label class="bold">N° / Référence Relevé (PDF) :</label><br>
-				<input type="text" name="ref" id="form_ref" class="flat centpercent" placeholder="Ex: 010 ou 2026-10" required>
-			</div>
-
-			<div class="marginbottom">
-				<label class="bold">Période du Relevé :</label><br>
-				<div class="inline-block" style="width:48%;">
-					Du : <input type="date" name="dt_from" id="form_dt_from" class="flat centpercent" required>
-				</div>
-				<div class="inline-block floatright" style="width:48%;">
-					Au : <input type="date" name="dt_to" id="form_dt_to" class="flat centpercent" required>
-				</div>
-				<div class="clearboth"></div>
-			</div>
-
-			<div class="marginbottom">
-				<label class="bold">Soldes officiels certifiés par le PDF :</label><br>
-				<div class="inline-block" style="width:48%;">
-					Solde Initial (€) :
-					<input type="text" name="opening_balance" id="form_opening_balance" class="flat centpercent" placeholder="Ex: 20856.16">
-				</div>
-				<div class="inline-block floatright" style="width:48%;">
-					Solde Final (€) :
-					<input type="text" name="closing_balance" id="form_closing_balance" class="flat centpercent" placeholder="Ex: 7263.43">
-				</div>
-				<div class="clearboth"></div>
-			</div>
-
-			<div class="marginbottom">
-				<div class="inline-block" style="width:31%;">
-					<label class="bold">Nb d\'opérations :</label><br>
-					<input type="number" name="nb_operations" id="form_nb_operations" class="flat centpercent" placeholder="Ex: 20">
-				</div>
-				<div class="inline-block" style="width:31%; margin-left:3%;">
-					<label class="bold">Total Débits (€) :</label><br>
-					<input type="text" name="total_debit" id="form_total_debit" class="flat centpercent" placeholder="Ex: 15082.73">
-				</div>
-				<div class="inline-block floatright" style="width:31%;">
-					<label class="bold">Total Crédits (€) :</label><br>
-					<input type="text" name="total_credit" id="form_total_credit" class="flat centpercent" placeholder="Ex: 1490.00">
-				</div>
-				<div class="clearboth"></div>
-			</div>
-
-			<div class="marginbottom">
-				<label class="bold">Fichier PDF du Relevé réel :</label><br>
-				<input type="file" name="statement_pdf" class="flat centpercent" accept=".pdf">
-			</div>
-
-			<div class="right margintop">
-				<button type="button" class="button button-cancel" onclick="document.getElementById(\'modal_add_statement\').style.display=\'none\';">Annuler</button>
-				<button type="submit" class="button button-primary"><span class="fas fa-save paddingright"></span> Enregistrer</button>
-			</div>
-		</form>
-	</div>
-</div>
-
-<script type="text/javascript">
-function openEditModal(id, ref, dtFrom, dtTo, openingBal, closingBal, nbOps, totDebit, totCredit) {
-	document.getElementById("modal_title").innerHTML = "<span class=\"fas fa-edit paddingright\"></span> Modifier le Relevé " + ref;
-	document.getElementById("form_record_id").value = id;
-	document.getElementById("form_ref").value = ref;
-	document.getElementById("form_opening_balance").value = openingBal || "";
-	document.getElementById("form_closing_balance").value = closingBal || "";
-	document.getElementById("form_nb_operations").value = nbOps || "";
-	document.getElementById("form_total_debit").value = totDebit || "";
-	document.getElementById("form_total_credit").value = totCredit || "";
-
-	if (dtFrom) {
-		var parts = dtFrom.split("/");
-		if (parts.length == 3) document.getElementById("form_dt_from").value = parts[2] + "-" + parts[1] + "-" + parts[0];
-	}
-	if (dtTo) {
-		var parts = dtTo.split("/");
-		if (parts.length == 3) document.getElementById("form_dt_to").value = parts[2] + "-" + parts[1] + "-" + parts[0];
-	}
-
-	document.getElementById("modal_add_statement").style.display = "block";
-}
-</script>
-';
-
-// End of page
 llxFooter();
 $db->close();

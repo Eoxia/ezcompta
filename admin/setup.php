@@ -109,9 +109,9 @@ if (!$user->admin) {
 
 
 // Enter here all parameters in your setup page
-
-// Setup conf for selection of an URL
-//$item = $formSetup->newItem('EZCOMPTA_MYPARAM1');
+$item = $formSetup->newItem('EZCOMPTA_BANKSTATEMENT_ALLOW_MANUAL_LINES');
+$item->setAsYesNo();
+$item->defaultFieldValue = '0';
 //$item->fieldAttr['placeholder'] = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://') . $_SERVER['HTTP_HOST'];
 //$item->cssClass = 'minwidth500';
 //
@@ -197,17 +197,24 @@ if (isModEnabled("banking4dolibarr")) {
 $setupnotempty += count($formSetup->items);
 
 
-//$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
+$dirmodels = array_merge(array('/', '/ezcompta/'), (array) (empty($conf->modules_parts['models']) ? array() : $conf->modules_parts['models']));
 
-//$moduledir = 'ezcompta';
-//$myTmpObjects = array();
-//// TODO Scan list of objects to fill this array
-//$myTmpObjects['myobject'] = array('label' => 'MyObject', 'includerefgeneration' => 0, 'includedocgeneration' => 0, 'class' => 'MyObject');
-//
-//$tmpobjectkey = GETPOST('object', 'aZ09');
-//if ($tmpobjectkey && !array_key_exists($tmpobjectkey, $myTmpObjects)) {
-//	accessforbidden('Bad value for object. Hack attempt ?');
-//}
+$moduledir = 'ezcompta';
+$myTmpObjects = array();
+$myTmpObjects['bankstatement'] = array(
+	'label' => 'BankStatements',
+	'includerefgeneration' => 1,
+	'includedocgeneration' => 0,
+	'class' => 'BankRecord'
+);
+
+$tmpobjectkey = GETPOST('object', 'aZ09');
+if (empty($tmpobjectkey)) {
+	$tmpobjectkey = 'bankstatement';
+}
+if ($tmpobjectkey && !array_key_exists($tmpobjectkey, $myTmpObjects)) {
+	accessforbidden('Bad value for object. Hack attempt ?');
+}
 
 
 /*
@@ -215,108 +222,42 @@ $setupnotempty += count($formSetup->items);
  */
 
 // For retrocompatibility Dolibarr < 15.0
-//if (versioncompare(explode('.', DOL_VERSION), array(15)) < 0 && $action == 'update' && !empty($user->admin)) {
-//	$formSetup->saveConfFromPost();
-//}
-//
-//include DOL_DOCUMENT_ROOT.'/core/actions_setmoduleoptions.inc.php';
+if (versioncompare(explode('.', DOL_VERSION), array(15)) < 0 && $action == 'update' && !empty($user->admin)) {
+	$formSetup->saveConfFromPost();
+}
 
-//if ($action == 'updateMask') {
-//	$maskconst = GETPOST('maskconst', 'aZ09');
-//	$maskvalue = GETPOST('maskvalue', 'alpha');
-//
-//	if ($maskconst && preg_match('/_MASK$/', $maskconst)) {
-//		$res = dolibarr_set_const($db, $maskconst, $maskvalue, 'chaine', 0, '', $conf->entity);
-//		if (!($res > 0)) {
-//			$error++;
-//		}
-//	}
-//
-//	if (!$error) {
-//		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
-//	} else {
-//		setEventMessages($langs->trans("Error"), null, 'errors');
-//	}
-//} elseif ($action == 'specimen' && $tmpobjectkey) {
-//	$modele = GETPOST('module', 'alpha');
-//
-//	$className = $myTmpObjects[$tmpobjectkey]['class'];
-//	$tmpobject = new $className($db);
-//	'@phan-var-force MyObject $tmpobject';
-//	$tmpobject->initAsSpecimen();
-//
-//	// Search template files
-//	$file = '';
-//	$className = '';
-//	$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
-//	foreach ($dirmodels as $reldir) {
-//		$file = dol_buildpath($reldir."core/modules/ezcompta/doc/pdf_".$modele."_".strtolower($tmpobjectkey).".modules.php", 0);
-//		if (file_exists($file)) {
-//			$className = "pdf_".$modele."_".strtolower($tmpobjectkey);
-//			break;
-//		}
-//	}
-//
-//	if ($className !== '') {
-//		require_once $file;
-//
-//		$module = new $className($db);
-//		'@phan-var-force ModelePDFMyObject $module';
-//
-//		'@phan-var-force ModelePDFMyObject $module';
-//
-//		if ($module->write_file($tmpobject, $langs) > 0) {
-//			header("Location: ".DOL_URL_ROOT."/document.php?modulepart=ezcompta-".strtolower($tmpobjectkey)."&file=SPECIMEN.pdf");
-//			return;
-//		} else {
-//			setEventMessages($module->error, null, 'errors');
-//			dol_syslog($module->error, LOG_ERR);
-//		}
-//	} else {
-//		setEventMessages($langs->trans("ErrorModuleNotFound"), null, 'errors');
-//		dol_syslog($langs->trans("ErrorModuleNotFound"), LOG_ERR);
-//	}
-//} elseif ($action == 'setmod') {
-//	// TODO Check if numbering module chosen can be activated by calling method canBeActivated
-//	if (!empty($tmpobjectkey)) {
-//		$constforval = 'EZCOMPTA_'.strtoupper($tmpobjectkey)."_ADDON";
-//		dolibarr_set_const($db, $constforval, $value, 'chaine', 0, '', $conf->entity);
-//	}
-//} elseif ($action == 'set') {
-//	// Activate a model
-//	$ret = addDocumentModel($value, $type, $label, $scandir);
-//} elseif ($action == 'del') {
-//	$ret = delDocumentModel($value, $type);
-//	if ($ret > 0) {
-//		if (!empty($tmpobjectkey)) {
-//			$constforval = 'EZCOMPTA_'.strtoupper($tmpobjectkey).'_ADDON_PDF';
-//			if (getDolGlobalString($constforval) == "$value") {
-//				dolibarr_del_const($db, $constforval, $conf->entity);
-//			}
-//		}
-//	}
-//} elseif ($action == 'setdoc') {
-//	// Set or unset default model
-//	if (!empty($tmpobjectkey)) {
-//		$constforval = 'EZCOMPTA_'.strtoupper($tmpobjectkey).'_ADDON_PDF';
-//		if (dolibarr_set_const($db, $constforval, $value, 'chaine', 0, '', $conf->entity)) {
-//			// The constant that was read before the new set
-//			// We therefore requires a variable to have a coherent view
-//			$conf->global->{$constforval} = $value;
-//		}
-//
-//		// We disable/enable the document template (into llx_document_model table)
-//		$ret = delDocumentModel($value, $type);
-//		if ($ret > 0) {
-//			$ret = addDocumentModel($value, $type, $label, $scandir);
-//		}
-//	}
-//} elseif ($action == 'unsetdoc') {
-//	if (!empty($tmpobjectkey)) {
-//		$constforval = 'EZCOMPTA_'.strtoupper($tmpobjectkey).'_ADDON_PDF';
-//		dolibarr_del_const($db, $constforval, $conf->entity);
-//	}
-//}
+include DOL_DOCUMENT_ROOT.'/core/actions_setmoduleoptions.inc.php';
+
+if ($action == 'updateMask') {
+	$maskconst = GETPOST('maskconst', 'aZ09');
+	$maskvalue = GETPOST('maskvalue', 'alpha');
+
+	if ($maskconst && preg_match('/_MASK$/', $maskconst)) {
+		$res = dolibarr_set_const($db, $maskconst, $maskvalue, 'chaine', 0, '', $conf->entity);
+		if (!($res > 0)) {
+			$error++;
+		}
+	}
+
+	if (!$error) {
+		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
+	} else {
+		setEventMessages($langs->trans("Error"), null, 'errors');
+	}
+} elseif ($action == 'setmod') {
+	if (!empty($tmpobjectkey)) {
+		$constforval = 'EZCOMPTA_'.strtoupper($tmpobjectkey)."_ADDON";
+		$res = dolibarr_set_const($db, $constforval, $value, 'chaine', 0, '', $conf->entity);
+		if (!($res > 0)) {
+			$error++;
+		}
+	}
+	if (!$error) {
+		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
+	} else {
+		setEventMessages($langs->trans("Error"), null, 'errors');
+	}
+}
 
 $action = 'edit';
 
@@ -342,26 +283,140 @@ $head = ezcomptaAdminPrepareHead();
 print dol_get_fiche_head($head, 'settings', $langs->trans($title), -1, "ezcompta@ezcompta");
 
 // Setup page goes here
-echo '<span class="opacitymedium">' . $langs->trans("EzcomptaSetupPage") . '</span><br><br>';
-
-
-/*if ($action == 'edit') {
- print $formSetup->generateOutput(true);
- print '<br>';
- } elseif (!empty($formSetup->items)) {
- print $formSetup->generateOutput();
- print '<div class="tabsAction">';
- print '<a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&token='.newToken().'">'.$langs->trans("Modify").'</a>';
- print '</div>';
- }
- */
 if (!empty($formSetup->items)) {
-	//print $formSetup->generateOutput(true);
+	print $formSetup->generateOutput(true);
 	print '<br>';
 }
 
+foreach ($myTmpObjects as $myTmpObjectKey => $myTmpObjectArray) {
+	if ($myTmpObjectArray['includerefgeneration']) {
+		/*
+		 * Numbering model
+		 */
+		print load_fiche_titre($langs->trans("BankStatementNumberingModules"), '', '');
 
-if (empty($setupnotempty)) {
+		print '<table class="noborder centpercent">';
+		print '<tr class="liste_titre">';
+		print '<td>'.$langs->trans("Name").'</td>';
+		print '<td>'.$langs->trans("Description").'</td>';
+		print '<td class="nowrap">'.$langs->trans("Example").'</td>';
+		print '<td class="center" width="60">'.$langs->trans("Status").'</td>';
+		print '<td class="center" width="16">'.$langs->trans("ShortInfo").'</td>';
+		print '</tr>'."\n";
+
+		clearstatcache();
+
+		dol_include_once('/ezcompta/class/bankrecord.class.php');
+
+		$scanned_models = array();
+
+		foreach ($dirmodels as $reldir) {
+			$dir = dol_buildpath($reldir."core/modules/".$moduledir);
+
+			if (is_dir($dir)) {
+				$handle = opendir($dir);
+				if (is_resource($handle)) {
+					while (($file = readdir($handle)) !== false) {
+						if (strpos($file, 'mod_'.strtolower($myTmpObjectKey).'_') === 0 && substr($file, dol_strlen($file) - 4, 4) == '.php') {
+							$file = substr($file, 0, dol_strlen($file) - 4);
+
+							if (in_array($file, $scanned_models)) {
+								continue;
+							}
+							$scanned_models[] = $file;
+
+							require_once $dir.'/'.$file.'.php';
+
+							$module = new $file($db);
+							'@phan-var-force ModeleNumRefBankStatement $module';
+
+							// Show modules according to feature level
+							if ($module->version == 'development' && getDolGlobalInt('MAIN_FEATURES_LEVEL') < 2) {
+								continue;
+							}
+							if ($module->version == 'experimental' && getDolGlobalInt('MAIN_FEATURES_LEVEL') < 1) {
+								continue;
+							}
+
+							if ($module->isEnabled()) {
+								print '<tr class="oddeven"><td>'.$module->name."</td><td>\n";
+								print $module->info($langs);
+								print '</td>';
+
+								// Show example of the numbering model
+								print '<td class="nowrap">';
+								$tmp = $module->getExample();
+								if (preg_match('/^Error/', $tmp)) {
+									$langs->load("errors");
+									print '<div class="error">'.$langs->trans($tmp).'</div>';
+								} elseif ($tmp == 'NotConfigured') {
+									print $langs->trans($tmp);
+								} else {
+									print $tmp;
+								}
+								print '</td>'."\n";
+
+								print '<td class="center">';
+								$constforvar = 'EZCOMPTA_'.strtoupper($myTmpObjectKey).'_ADDON';
+								$defaultifnotset = 'mod_bankstatement_bankomatik';
+								$activenumberingmodel = getDolGlobalString($constforvar, $defaultifnotset);
+								if ($activenumberingmodel == 'mod_bankstatement_standard') {
+									$activenumberingmodel = 'mod_bankstatement_bankomatik';
+									dolibarr_set_const($db, $constforvar, $activenumberingmodel, 'chaine', 0, '', $conf->entity);
+								} elseif ($activenumberingmodel == 'mod_bankstatement_free') {
+									$activenumberingmodel = 'mod_bankstatement_bankanarchie';
+									dolibarr_set_const($db, $constforvar, $activenumberingmodel, 'chaine', 0, '', $conf->entity);
+								} elseif ($activenumberingmodel == 'mod_bankstatement_advanced') {
+									$activenumberingmodel = 'mod_bankstatement_bankalchimiste';
+									dolibarr_set_const($db, $constforvar, $activenumberingmodel, 'chaine', 0, '', $conf->entity);
+								}
+								if ($activenumberingmodel == $file) {
+									print img_picto($langs->trans("Activated"), 'switch_on');
+								} else {
+									print '<a href="'.$_SERVER["PHP_SELF"].'?action=setmod&token='.newToken().'&object='.strtolower($myTmpObjectKey).'&value='.urlencode($file).'">';
+									print img_picto($langs->trans("Disabled"), 'switch_off');
+									print '</a>';
+								}
+								print '</td>';
+
+								$className = $myTmpObjectArray['class'];
+								$mytmpinstance = new $className($db);
+								$mytmpinstance->initAsSpecimen();
+
+								// Info
+								$htmltooltip = '';
+								$htmltooltip .= ''.$langs->trans("Version").': <b>'.$module->getVersion().'</b><br>';
+
+								$nextval = $module->getNextValue($mytmpinstance);
+								if ("$nextval" != $langs->trans("NotAvailable")) {  // Keep " on nextval
+									$htmltooltip .= ''.$langs->trans("NextValue").': ';
+									if ($nextval) {
+										if (preg_match('/^Error/', $nextval) || $nextval == 'NotConfigured') {
+											$nextval = $langs->trans($nextval);
+										}
+										$htmltooltip .= $nextval.'<br>';
+									} else {
+										$htmltooltip .= $langs->trans($module->error ? $module->error : 'None').'<br>';
+									}
+								}
+
+								print '<td class="center">';
+								print $form->textwithpicto('', $htmltooltip, 1, 'info');
+								print '</td>';
+
+								print "</tr>\n";
+							}
+						}
+					}
+					closedir($handle);
+				}
+			}
+		}
+		print "</table><br>\n";
+	}
+}
+
+if (empty($setupnotempty) && empty($myTmpObjects)) {
 	print '<br>' . $langs->trans("NothingToSetup");
 }
 

@@ -1,9 +1,10 @@
 <?php
 /* Copyright (C) 2026		Florian Henry				<florian.henry@scopen.fr>
+ * Copyright (C) 2026		Laurent MAGNIN				<laurent.magnin@evarisk.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -12,7 +13,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 /**
@@ -22,9 +23,9 @@
  */
 
 /**
- * Prepare array of tabs for BankStatement
+ * Prepare array of tabs for BankStatement / BankRecord
  *
- * @param	BankStatement	$object					BankStatement
+ * @param	BankRecord|BankStatement	$object					BankStatement or BankRecord
  * @return 	array<array{string,string,string}>	Array of tabs
  */
 function bankstatementPrepareHead($object)
@@ -33,10 +34,10 @@ function bankstatementPrepareHead($object)
 
 	$langs->load("ezcompta@ezcompta");
 
-	$showtabofpagecontact = 1;
+	$showtabofpagecontact = 0;
 	$showtabofpagenote = 1;
 	$showtabofpagedocument = 1;
-	$showtabofpageagenda = 1;
+	$showtabofpageagenda = 0;
 
 	$h = 0;
 	$head = array();
@@ -46,37 +47,19 @@ function bankstatementPrepareHead($object)
 	$head[$h][2] = 'card';
 	$h++;
 
-	if ($showtabofpagecontact) {
-		$head[$h][0] = dol_buildpath("/ezcompta/bankstatement_contact.php", 1).'?id='.$object->id;
-		$head[$h][1] = $langs->trans("Contacts");
-		$head[$h][2] = 'contact';
-		$h++;
-	}
-
-	if ($showtabofpagenote) {
-		if (isset($object->fields['note_public']) || isset($object->fields['note_private'])) {
-			$nbNote = 0;
-			if (!empty($object->note_private)) {
-				$nbNote++;
-			}
-			if (!empty($object->note_public)) {
-				$nbNote++;
-			}
-			$head[$h][0] = dol_buildpath('/ezcompta/bankstatement_note.php', 1).'?id='.$object->id;
-			$head[$h][1] = $langs->trans('Notes');
-			if ($nbNote > 0) {
-				$head[$h][1] .= (!getDolGlobalInt('MAIN_OPTIMIZEFORTEXTBROWSER') ? '<span class="badge marginleftonlyshort">'.$nbNote.'</span>' : '');
-			}
-			$head[$h][2] = 'note';
-			$h++;
-		}
-	}
-
 	if ($showtabofpagedocument) {
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 		require_once DOL_DOCUMENT_ROOT.'/core/class/link.class.php';
-		$upload_dir = $conf->ezcompta->dir_output."/bankstatement/".dol_sanitizeFileName($object->ref);
-		$nbFiles = count(dol_dir_list($upload_dir, 'files', 0, '', '(\.meta|_preview.*\.png)$'));
+
+		$upload_dir = '';
+		if (!empty($object->fk_bank) && !empty($conf->bank->dir_output)) {
+			$upload_dir = $conf->bank->dir_output.'/'.$object->fk_bank.'/statement/'.$object->id;
+		}
+		if (empty($upload_dir) || !is_dir($upload_dir)) {
+			$upload_dir = $conf->ezcompta->dir_output."/bankstatement/".$object->id;
+		}
+
+		$nbFiles = is_dir($upload_dir) ? count(dol_dir_list($upload_dir, 'files', 0, '', '(\.meta|_preview.*\.png)$')) : 0;
 		$nbLinks = Link::count($db, $object->element, $object->id);
 		$head[$h][0] = dol_buildpath("/ezcompta/bankstatement_document.php", 1).'?id='.$object->id;
 		$head[$h][1] = $langs->trans('Documents');
@@ -87,6 +70,17 @@ function bankstatementPrepareHead($object)
 		$h++;
 	}
 
+	if ($showtabofpagenote) {
+		$nbNotes = (!empty($object->note_private) ? 1 : 0) + (!empty($object->note_public) ? 1 : 0);
+		$head[$h][0] = dol_buildpath("/ezcompta/bankstatement_note.php", 1).'?id='.$object->id;
+		$head[$h][1] = $langs->trans('Notes');
+		if ($nbNotes > 0) {
+			$head[$h][1] .= '<span class="badge marginleftonlyshort">'.$nbNotes.'</span>';
+		}
+		$head[$h][2] = 'note';
+		$h++;
+	}
+
 	if ($showtabofpageagenda) {
 		$head[$h][0] = dol_buildpath("/ezcompta/bankstatement_agenda.php", 1).'?id='.$object->id;
 		$head[$h][1] = $langs->trans("Events");
@@ -94,16 +88,7 @@ function bankstatementPrepareHead($object)
 		$h++;
 	}
 
-	// Show more tabs from modules
-	// Entries must be declared in modules descriptor with line
-	//$this->tabs = array(
-	//	'entity:+tabname:Title:@ezcompta:/ezcompta/mypage.php?id=__ID__'
-	//); // to add new tab
-	//$this->tabs = array(
-	//	'entity:-tabname:Title:@ezcompta:/ezcompta/mypage.php?id=__ID__'
-	//); // to remove a tab
 	complete_head_from_modules($conf, $langs, $object, $head, $h, 'bankstatement@ezcompta');
-
 	complete_head_from_modules($conf, $langs, $object, $head, $h, 'bankstatement@ezcompta', 'remove');
 
 	return $head;

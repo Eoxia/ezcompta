@@ -83,7 +83,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
-dol_include_once('/ezcompta/class/bankstatement.class.php');
+dol_include_once('/ezcompta/class/bankrecord.class.php');
 dol_include_once('/ezcompta/lib/ezcompta_bankstatement.lib.php');
 
 /**
@@ -122,10 +122,10 @@ if (!$sortfield) {
 //if (! $sortfield) $sortfield="position_name";
 
 // Initialize a technical objects
-$object = new BankStatement($db);
+$object = new BankRecord($db);
 $extrafields = new ExtraFields($db);
 $diroutputmassaction = $conf->ezcompta->dir_output.'/temp/massgeneration/'.$user->id;
-$hookmanager->initHooks(array($object->element.'document', 'globalcard')); // Note that conf->hooks_modules contains array
+$hookmanager->initHooks(array('bankstatementdocument', 'globalcard')); // Note that conf->hooks_modules contains array
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
@@ -134,7 +134,11 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be 'include', not 'include_once'. Include fetch and fetch_thirdparty but not fetch_optionals
 
 if ($id > 0 || !empty($ref)) {
-	$upload_dir = $conf->ezcompta->multidir_output[$object->entity ? $object->entity : $conf->entity]."/bankstatement/".get_exdir(0, 0, 0, 1, $object);
+	if (!empty($object->fk_bank) && !empty($conf->bank->dir_output)) {
+		$upload_dir = $conf->bank->dir_output.'/'.$object->fk_bank.'/statement/'.$object->id;
+	} else {
+		$upload_dir = $conf->ezcompta->multidir_output[$object->entity ? $object->entity : $conf->entity]."/bankstatement/".$object->id;
+	}
 }
 
 // Permissions
@@ -262,10 +266,9 @@ print '</div>';
 
 print dol_get_fiche_end();
 
-$modulepart = 'ezcompta';
+$modulepart = 'bank';
 $param = '&id='.$object->id;
-//$relativepathwithnofile='bankstatement/' . dol_sanitizeFileName($object->id).'/';
-$relativepathwithnofile = 'bankstatement/'.dol_sanitizeFileName($object->ref).'/';
+$relativepathwithnofile = $object->fk_bank.'/statement/'.$object->id.'/';
 
 include DOL_DOCUMENT_ROOT.'/core/tpl/document_actions_post_headers.tpl.php';
 

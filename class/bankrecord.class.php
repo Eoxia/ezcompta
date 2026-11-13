@@ -68,6 +68,11 @@ class BankRecord extends CommonObject
 	 */
 	public $picto = 'fa-file-invoice-dollar';
 
+	/**
+	 * @var int 1 = entity is managed
+	 */
+	public $ismultientitymanaged = 1;
+
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 1;
 	const STATUS_CANCELED = 9;
@@ -212,6 +217,73 @@ class BankRecord extends CommonObject
 	}
 
 	/**
+	 * Initialize specimen object for numbering preview
+	 *
+	 * @return int 1
+	 */
+	public function initAsSpecimen()
+	{
+		$this->id = 0;
+		$this->ref = 'SPECIMEN';
+		$this->specimen = 1;
+		$this->entity = 1;
+		$this->fk_bank = 1;
+		$this->dt_from = dol_now() - 30 * 86400;
+		$this->dt_to = dol_now();
+		$this->date_creation = dol_now();
+		$this->datec = dol_now();
+		$this->opening_balance = 1000.0;
+		$this->closing_balance = 1500.0;
+		$this->total_debit = 500.0;
+		$this->total_credit = 1000.0;
+		$this->nb_operations = 5;
+		$this->status = self::STATUS_DRAFT;
+		return 1;
+	}
+
+	/**
+	 * Return next reference for bank record
+	 *
+	 * @return string|int Next reference string, or -1 on error
+	 */
+	public function getNextNumRef()
+	{
+		global $conf, $langs;
+		$langs->load("ezcompta@ezcompta");
+
+		$addon = getDolGlobalString('EZCOMPTA_BANKSTATEMENT_ADDON', 'mod_bankstatement_bankomatik');
+		if ($addon == 'mod_bankstatement_standard') {
+			$addon = 'mod_bankstatement_bankomatik';
+		} elseif ($addon == 'mod_bankstatement_free') {
+			$addon = 'mod_bankstatement_bankanarchie';
+		} elseif ($addon == 'mod_bankstatement_advanced') {
+			$addon = 'mod_bankstatement_bankalchimiste';
+		}
+
+		$file = $addon . '.php';
+		$classname = $addon;
+
+		$res = dol_include_once('/ezcompta/core/modules/ezcompta/' . $file);
+		if ($res <= 0) {
+			$res = dol_include_once('/core/modules/ezcompta/' . $file);
+		}
+
+		if (class_exists($classname)) {
+			$obj = new $classname($this->db);
+			$numref = $obj->getNextValue($this);
+			if ($numref !== -1 && $numref !== false) {
+				return $numref;
+			} else {
+				$this->error = $obj->error;
+				return -1;
+			}
+		} else {
+			$this->error = "Numbering module '".$addon."' not found";
+			return -1;
+		}
+	}
+
+	/**
 	 * Create bank record into database
 	 *
 	 * @param  User $user      User that creates
@@ -229,6 +301,16 @@ class BankRecord extends CommonObject
 		$this->fk_user_author = $user->id;
 		if (empty($this->entity)) {
 			$this->entity = (!empty($conf->entity) ? (int) $conf->entity : 1);
+		}
+
+		if (empty($this->ref)) {
+			$addon = getDolGlobalString('EZCOMPTA_BANKSTATEMENT_ADDON', 'mod_bankstatement_bankomatik');
+			if ($addon != 'mod_bankstatement_bankanarchie' && $addon != 'mod_bankstatement_free') {
+				$numref = $this->getNextNumRef();
+				if ($numref !== -1 && !empty($numref)) {
+					$this->ref = $numref;
+				}
+			}
 		}
 
 		if (!empty($this->note) && empty($this->note_private)) {
@@ -548,6 +630,26 @@ class BankRecord extends CommonObject
 	}
 
 	/**
+	 * Alias of fetch_lines()
+	 *
+	 * @return array<BankRecordLine|CommonObject|stdClass> Array of lines
+	 */
+	public function fetchLines()
+	{
+		return $this->fetch_lines();
+	}
+
+	/**
+	 * Alias of fetch_lines()
+	 *
+	 * @return array<BankRecordLine|CommonObject|stdClass> Array of lines
+	 */
+	public function fetchAllLines()
+	{
+		return $this->fetch_lines();
+	}
+
+	/**
 	 * Calculate dynamic stats on-the-fly from statement transactions.
 	 * Checks llx_bank_record_det first, then falls back to llx_bank_import.
 	 *
@@ -639,5 +741,296 @@ class BankRecord extends CommonObject
 		} else {
 			return '<span class="badge badge-status1 badge-status">'.$langs->trans("Draft").'</span>';
 		}
+	}
+
+	/**
+	 * Validate bank record
+	 *
+	 * @param  User $user User that validates
+	 * @return int        Return integer <0 if KO, >0 if OK
+	 */
+	public function validate(User $user)
+	{
+		global $langs;
+
+		$this->fetch_lines();
+		$nb_lines = count($this->lines);
+
+		if ($this->nb_operations !== null && $this->nb_operations > 0 && $nb_lines != $this->nb_operations) {
+			$this->error = $langs->trans("ErrorLinesCountMismatchWithNbOperations", $nb_lines, $this->nb_operations);
+			return -1;
+		}
+
+		$this->status = self::STATUS_VALIDATED;
+		$this->date_valid = dol_now();
+		$this->fk_user_valid = $user->id;
+		return $this->update($user);
+	}
+
+	/**
+	 * Re-open bank record to draft status
+	 *
+	 * @param  User $user User that re-opens
+	 * @return int        Return integer <0 if KO, >0 if OK
+	 */
+	public function reopen(User $user)
+	{
+		$this->status = self::STATUS_DRAFT;
+		$this->date_valid = null;
+		$this->fk_user_valid = null;
+		return $this->update($user);
+	}
+
+	/**
+	 * Return link to bank record with picto
+	 *
+	 * @param  int    $withpicto 0=No picto, 1=Include picto, 2=Picto only
+	 * @param  string $option    Options
+	 * @param  int    $notooltip 0=Tooltip, 1=No tooltip
+	 * @param  int    $save_lastsearch_value Save search
+	 * @param  string $morecss   More css
+	 * @return string            HTML link
+	 */
+	public function getNomUrl($withpicto = 0, $option = '', $notooltip = 0, $save_lastsearch_value = -1, $morecss = '')
+	{
+		global $langs;
+
+		$result = '';
+		$url = dol_buildpath('/ezcompta/bankstatement_card.php', 1).'?id='.$this->id;
+
+		$label = '<u>'.$langs->trans("BankStatement").'</u>';
+		$label .= '<br><b>'.$langs->trans("Ref").':</b> '.$this->ref;
+		if (!empty($this->dt_from) && !empty($this->dt_to)) {
+			$label .= '<br><b>'.$langs->trans("Period").':</b> '.dol_print_date($this->dt_from, 'day').' - '.dol_print_date($this->dt_to, 'day');
+		}
+		if ($this->closing_balance !== null) {
+			$label .= '<br><b>'.$langs->trans("EndingBalance").':</b> '.price($this->closing_balance);
+		}
+
+		$linkclose = '';
+		if (empty($notooltip)) {
+			$linkclose .= ' title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip'.($morecss ? ' '.$morecss : '').'"';
+		} else {
+			$linkclose .= ($morecss ? ' class="'.$morecss.'"' : '');
+		}
+
+		$linkstart = '<a href="'.$url.'"'.$linkclose.'>';
+		$linkend = '</a>';
+
+		$picto = 'fa-file-invoice-dollar';
+
+		if ($withpicto) {
+			$result .= ($linkstart.img_picto('', $picto, 'class="paddingright"').$linkend);
+		}
+		if ($withpicto != 2) {
+			$result .= $linkstart.$this->ref.$linkend;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Add a statement line into database
+	 *
+	 * @param  int         $bdate                    Booking date
+	 * @param  int         $vdate                    Value date
+	 * @param  float       $amount                   Signed amount (+ credit, - debit)
+	 * @param  string      $label                    Operation label
+	 * @param  string      $currency_code            Currency code
+	 * @param  float       $charges_amount           Charges amount
+	 * @param  string|null $end_to_end_id            End to end ID
+	 * @param  string|null $acct_svcr_ref            Account servicer reference
+	 * @param  string|null $mandate_id               Mandate reference
+	 * @param  string|null $check_number             Check number
+	 * @param  string|null $counterparty_name        Counterparty name
+	 * @param  string|null $counterparty_iban        Counterparty IBAN
+	 * @param  string|null $counterparty_bic         Counterparty BIC
+	 * @param  string|null $remittance_unstructured  Unstructured remittance
+	 * @param  string|null $remittance_structured    Structured remittance
+	 * @param  string|null $bank_tx_code             Bank transaction code
+	 * @param  string|null $proprietary_code         Proprietary code
+	 * @param  int|null    $fk_soc                   Thirdparty ID
+	 * @param  int|null    $fk_bank                  Linked llx_bank entry ID
+	 * @param  int         $status                   Status
+	 * @param  string|null $datas                    Datas
+	 * @param  string|null $import_key               Import key
+	 * @return int                                   >0 if OK, <0 if KO
+	 */
+	public function addline(
+		$bdate,
+		$vdate,
+		$amount,
+		$label,
+		$currency_code = 'EUR',
+		$charges_amount = 0.0,
+		$end_to_end_id = null,
+		$acct_svcr_ref = null,
+		$mandate_id = null,
+		$check_number = null,
+		$counterparty_name = null,
+		$counterparty_iban = null,
+		$counterparty_bic = null,
+		$remittance_unstructured = null,
+		$remittance_structured = null,
+		$bank_tx_code = null,
+		$proprietary_code = null,
+		$fk_soc = null,
+		$fk_bank = null,
+		$status = 0,
+		$datas = null,
+		$import_key = null
+	) {
+		global $user;
+
+		if (empty($this->id)) {
+			return -1;
+		}
+
+		$line = new BankRecordLine($this->db);
+		$line->fk_bank_record = $this->id;
+		$line->bdate = $bdate;
+		$line->vdate = !empty($vdate) ? $vdate : $bdate;
+		$line->amount = $amount;
+		$line->label = $label;
+		$line->currency_code = !empty($currency_code) ? $currency_code : 'EUR';
+		$line->charges_amount = $charges_amount;
+		$line->end_to_end_id = $end_to_end_id;
+		$line->acct_svcr_ref = $acct_svcr_ref;
+		$line->mandate_id = $mandate_id;
+		$line->check_number = $check_number;
+		$line->counterparty_name = $counterparty_name;
+		$line->counterparty_iban = $counterparty_iban;
+		$line->counterparty_bic = $counterparty_bic;
+		$line->remittance_unstructured = $remittance_unstructured;
+		$line->remittance_structured = $remittance_structured;
+		$line->bank_tx_code = $bank_tx_code;
+		$line->proprietary_code = $proprietary_code;
+		$line->fk_soc = $fk_soc;
+		$line->fk_bank = $fk_bank;
+		$line->status = $status;
+		$line->datas = $datas;
+		$line->import_key = $import_key;
+
+		$res = $line->create($user);
+		if ($res > 0) {
+			$this->fetch_lines();
+			return $res;
+		} else {
+			$this->error = $line->error;
+			$this->errors = $line->errors;
+			return -1;
+		}
+	}
+
+	/**
+	 * Update a statement line
+	 *
+	 * @param  int         $rowid                    Line ID
+	 * @param  int         $bdate                    Booking date
+	 * @param  int         $vdate                    Value date
+	 * @param  float       $amount                   Signed amount (+ credit, - debit)
+	 * @param  string      $label                    Operation label
+	 * @param  string      $currency_code            Currency code
+	 * @param  float       $charges_amount           Charges amount
+	 * @param  string|null $end_to_end_id            End to end ID
+	 * @param  string|null $acct_svcr_ref            Account servicer reference
+	 * @param  string|null $mandate_id               Mandate reference
+	 * @param  string|null $check_number             Check number
+	 * @param  string|null $counterparty_name        Counterparty name
+	 * @param  string|null $counterparty_iban        Counterparty IBAN
+	 * @param  string|null $counterparty_bic         Counterparty BIC
+	 * @param  string|null $remittance_unstructured  Unstructured remittance
+	 * @param  string|null $remittance_structured    Structured remittance
+	 * @param  string|null $bank_tx_code             Bank transaction code
+	 * @param  string|null $proprietary_code         Proprietary code
+	 * @param  int|null    $fk_soc                   Thirdparty ID
+	 * @param  int|null    $fk_bank                  Linked llx_bank entry ID
+	 * @param  int         $status                   Status
+	 * @return int                                   >0 if OK, <0 if KO
+	 */
+	public function updateline(
+		$rowid,
+		$bdate,
+		$vdate,
+		$amount,
+		$label,
+		$currency_code = 'EUR',
+		$charges_amount = 0.0,
+		$end_to_end_id = null,
+		$acct_svcr_ref = null,
+		$mandate_id = null,
+		$check_number = null,
+		$counterparty_name = null,
+		$counterparty_iban = null,
+		$counterparty_bic = null,
+		$remittance_unstructured = null,
+		$remittance_structured = null,
+		$bank_tx_code = null,
+		$proprietary_code = null,
+		$fk_soc = null,
+		$fk_bank = null,
+		$status = 0
+	) {
+		global $user;
+
+		$line = new BankRecordLine($this->db);
+		if ($line->fetch($rowid) <= 0) {
+			return -1;
+		}
+
+		$line->bdate = $bdate;
+		$line->vdate = !empty($vdate) ? $vdate : $bdate;
+		$line->amount = $amount;
+		$line->label = $label;
+		$line->currency_code = !empty($currency_code) ? $currency_code : 'EUR';
+		$line->charges_amount = $charges_amount;
+		$line->end_to_end_id = $end_to_end_id;
+		$line->acct_svcr_ref = $acct_svcr_ref;
+		$line->mandate_id = $mandate_id;
+		$line->check_number = $check_number;
+		$line->counterparty_name = $counterparty_name;
+		$line->counterparty_iban = $counterparty_iban;
+		$line->counterparty_bic = $counterparty_bic;
+		$line->remittance_unstructured = $remittance_unstructured;
+		$line->remittance_structured = $remittance_structured;
+		$line->bank_tx_code = $bank_tx_code;
+		$line->proprietary_code = $proprietary_code;
+		$line->fk_soc = $fk_soc;
+		$line->fk_bank = $fk_bank;
+		$line->status = $status;
+
+		$res = $line->update($user);
+		if ($res > 0) {
+			$this->fetch_lines();
+			return $res;
+		} else {
+			$this->error = $line->error;
+			$this->errors = $line->errors;
+			return -1;
+		}
+	}
+
+	/**
+	 * Delete a statement line
+	 *
+	 * @param  User|null $user    User that deletes
+	 * @param  int       $line_id ID of line to delete
+	 * @return int             >0 if OK, <0 if KO
+	 */
+	public function deleteline($user, $line_id)
+	{
+		$line = new BankRecordLine($this->db);
+		if ($line->fetch($line_id) > 0) {
+			if ($line->fk_bank_record == $this->id) {
+				$res = $line->delete($user);
+				if ($res > 0) {
+					$this->fetch_lines();
+					return 1;
+				}
+				$this->error = $line->error;
+				$this->errors = $line->errors;
+			}
+		}
+		return -1;
 	}
 }

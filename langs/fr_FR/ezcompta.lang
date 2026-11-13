@@ -71,3 +71,30 @@ EzComptaPendingTransferCount=%d écriture(s) téléchargée(s) par banking4dolib
 EzComptaPendingTransferPeriod=Elles vont du %s au %s.
 EzComptaPendingTransferNone=Toutes les écritures téléchargées par banking4dolibarr ont déjà été transférées.
 EzComptaNoFirstLevelAccount=Le plan comptable « %s » ne contient aucun compte à un seul chiffre (1 à 9) : l'arborescence ne peut afficher aucun groupe. Ajouter les comptes racines dans le plan comptable pour utiliser cette page.
+
+# Bank statements & operations
+BankStatement=Relevé bancaire
+BankStatements=Relevés bancaires
+BankStatementNumberingModules=Modèles de numérotation des relevés bancaires
+BankStatementModelBankalchimiste=Bankalchimiste
+BankStatementModelBankalchimisteDesc=Transforme un masque personnalisé en numéro de relevé.
+BankStatementModelBankanarchie=Bankanarchie
+BankStatementModelBankanarchieDesc=Aucune règle, aucune contrainte, totale liberté.
+BankStatementModelBankomatik=Bankomatik
+BankStatementModelBankomatikDesc=Numérotation automatique, chronologique et séquentielle.
+ConfirmValidateBankStatement=Êtes-vous sûr de vouloir valider ce relevé bancaire ?
+ConfirmReopenBankStatement=Êtes-vous sûr de vouloir rouvrir ce relevé bancaire en brouillon ?
+DeleteBankStatement=Supprimer le relevé bancaire
+BankStatementLines=Opérations du relevé
+LineId=ID Ligne
+AddBankRecordLine=Ajouter une opération
+IsoRef=Réf ISO / EndToEndId
+Counterparty=Contrepartie / Tiers
+OfficialStatement=Relevé PDF certifié
+CalculatedFromLines=Calculé d'après les lignes
+BalanceGap=Écart de solde
+WarningLinesCountMustMatchNbOperations=Attention : pour valider, il faut le même nombre de lignes que d'opérations déclarées sur le relevé (%s lignes pour %s opérations).
+ErrorLinesCountMismatchWithNbOperations=Impossible de valider le relevé : le nombre de lignes (%s) ne correspond pas au nombre d'opérations déclarées sur le relevé (%s).
+EZCOMPTA_BANKSTATEMENT_ALLOW_MANUAL_LINES=Autoriser l'ajout et la suppression manuels de lignes de relevé
+EZCOMPTA_BANKSTATEMENT_ALLOW_MANUAL_LINESTooltip=Par défaut (Non), le relevé contient exactement le nombre d'opérations défini sur le relevé certifié. Si activé (Oui), vous pouvez ajouter ou supprimer des lignes manuellement sur les relevés en brouillon.
+
